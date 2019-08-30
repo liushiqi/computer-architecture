@@ -59,8 +59,9 @@ if {${command} == "create"} {
 } elseif {${command} == "open"} {
   if {![file exists $project_path]} {
     create
+  } else {
+    open_prj
   }
-  open_prj
   add_project_files
   start_gui
 } elseif {${command} == "load_src"} {
