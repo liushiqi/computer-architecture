@@ -26,13 +26,11 @@ proc remove_prj {} {
 proc create {} {
   remove_prj
   create_project ${::project_name} -force -dir ${::project_path} -part ${::part_name}
-  set_property source_mgmt_mode None [current_project]
   add_project_files
 }
 
 proc open_prj {} {
   open_project ${::project_file}
-  set_property source_mgmt_mode None [current_project]
 }
 
 proc add_project_files {} {
@@ -70,5 +68,3 @@ if {${command} == "create"} {
 } elseif {${command} == "sim"} {
   # TODO
 }
-
-close_project
