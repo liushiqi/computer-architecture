@@ -1,8 +1,9 @@
 # Custom ignore
-*/project
-*/simulation
-*/.Xil
-*/.idea
+**/project
+**/simulation
+**/bit
+**/.Xil
+**/.idea
 
 ### Xilinx template
 # gitignore template for Xilinx Vivado Design Suite
@@ -27,7 +28,6 @@
 *.vdi
 *.dmp
 *.rpx
-*.rpt
 *_stub.v
 *_stub.vhdl
 *_funcsim.v
