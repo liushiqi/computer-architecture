@@ -1,11 +1,11 @@
 set command [lindex $argv 0]
 
-set part_name xc7a200tfbg676-1
+set part_name xc7a200tfbg676-2
 
-set project_name led
+set project_name PROJECT_NAME
 
-set design_top led
-set simulation_top testbench
+set design_top DESIGN_TOP
+set simulation_top SIMULATION_TOP
 
 set script_path [file dirname [info script]]
 set project_path ${script_path}/../project

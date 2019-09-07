@@ -1,7 +1,8 @@
 # Custom ignore
 **/project
-**/simulation
+**/sim
 **/bit
+**/report
 **/.Xil
 **/.idea
 
