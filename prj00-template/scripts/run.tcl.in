@@ -172,8 +172,8 @@ if {${command} == "open"} {
   if {![file exists ${wave_config_file}]} {
     file mkdir ${simulation_result_path}
     file copy ${script_path}/wcfg/behav.wcfg ${simulation_result_path}
-    add_files -norecurse -fileset sim_1 ${simulation_result_path}/behav.wcfg
   }
+  add_files -norecurse -fileset sim_1 ${simulation_result_path}/behav.wcfg
 
   # Parse sim time
   if {${argc} >= 2} {
