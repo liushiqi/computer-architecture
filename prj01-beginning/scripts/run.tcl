@@ -207,4 +207,5 @@ if {${command} == "open"} {
   open_hw_target
   set_property program.file ${bit_file} [get_hw_devices *]
   program_hw_devices
+  close_hw
 }

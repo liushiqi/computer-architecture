@@ -8,7 +8,7 @@ open:
 simulation:
 	./run.sh simulation ${PARMAS}
 
-bit:
+bit_gen:
 	./run.sh bit ${PARMAS}
 
 board:
