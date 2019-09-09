@@ -2,10 +2,10 @@ set command [lindex $argv 0]
 
 set part_name xc7a200tfbg676-2
 
-set project_name PROJECT_NAME
+set project_name block_ram
 
-set design_top DESIGN_TOP
-set simulation_top SIMULATION_TOP
+set design_top block_ram_top
+set simulation_top block_ram_testbench
 
 set script_path [file dirname [info script]]
 set project_path ${script_path}/../project

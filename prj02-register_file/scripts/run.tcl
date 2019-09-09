@@ -164,6 +164,7 @@ proc number_of_cpus {} {
 set max_process [number_of_cpus]
 
 open_prj
+source external.tcl
 
 if {${command} == "open"} {
   start_gui
@@ -208,4 +209,5 @@ if {${command} == "open"} {
   open_hw_target
   set_property program.file ${bit_file} [get_hw_devices *]
   program_hw_devices
+  close_hw
 }

@@ -164,6 +164,7 @@ proc number_of_cpus {} {
 set max_process [number_of_cpus]
 
 open_prj
+source ${script_path}/external.tcl
 
 if {${command} == "open"} {
   start_gui
