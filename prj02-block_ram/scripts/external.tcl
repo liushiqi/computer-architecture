@@ -15,4 +15,7 @@ if {![file exists ${bram_values::ip_gen_loc}/${ip_name}/${ip_name}.xci]} {
   validate_ip -save_ip [get_ips ${ip_name}]
   generate_target all [get_files ${bram_values::ip_gen_loc}/${ip_name}/${ip_name}.xci]
   create_fileset -blockset ${ip_name} -define_from ${ip_name}
+  if {${::command} == "bit"} {
+    synth_ip [get_ips ${ip_name}]
+  }
 }

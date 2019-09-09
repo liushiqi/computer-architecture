@@ -5,6 +5,7 @@
 **/report
 **/.Xil
 **/.idea
+**/log
 
 ### Xilinx template
 # gitignore template for Xilinx Vivado Design Suite

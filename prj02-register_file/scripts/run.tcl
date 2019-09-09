@@ -94,7 +94,7 @@ proc generate_bitstream {} {
   report_utilization -hierarchical -file ${::report_synthesis_path}/utilization.rpt
   report_timing_summary -delay_type max -max_paths 10 -file ${::report_synthesis_path}/timing.rpt
   report_clock_utilization -file ${::report_synthesis_path}/clock_util.rpt
-  
+
   # Placement
   place_design
   # Physical design optimization
@@ -113,8 +113,10 @@ proc generate_bitstream {} {
   report_timing_summary -delay_type max -max_paths 10 -file ${::report_implement_path}/post_route_timing.rpt
   report_clock_utilization -file ${::report_implement_path}/post_route_clock_util.rpt
 
-  # bitstream generation
-  write_bitstream -force ${::bit_file}
+  if {${command} == "bitstream"} {
+    # bitstream generation
+    write_bitstream -force ${::bit_file}
+  }
 }
 
 proc get_files_in_dir {dirs} {
@@ -190,7 +192,7 @@ if {${command} == "open"} {
   set_property xsim.view ${simulation_result_path}/behav.wcfg [get_filesets sim_1]
   launch_simulation -mode behavioral
   start_gui
-} elseif {${command} == "bit"} {
+} elseif {${command} == "bitstream" || ${command} == "implementation"} {
   generate_bitstream
 } elseif {${command} == "board"} {
   set sources [get_files_in_dir ${source_path}]

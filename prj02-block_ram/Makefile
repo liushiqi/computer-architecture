@@ -3,16 +3,21 @@ PARAMS = ""
 all: open
 
 open:
-	./run.sh open ${PARAMS}
+	mkdir -p log
+	./run.sh open ${PARAMS} | tee log/open.log
 
 simulation:
-	./run.sh simulation ${PARAMS}
+	mkdir -p log
+	./run.sh simulation ${PARAMS} | tee log/simulation.log
 
-bit:
-	./run.sh bit ${PARAMS}
+bitstream:
+	mkdir -p log
+	./run.sh bitstream ${PARAMS} | tee log/bitstream.log
+
+implementation:
+	mkdir -p log
+	./run.sh implementation ${PARAMS} | tee log/implementation.log
 
 board:
-	./run.sh board ${PARAMS}
-
-tcl:
-	./run.sh tcl ${PARAMS}
+	mkdir -p log
+	./run.sh board ${PARAMS} | tee log/board.log
