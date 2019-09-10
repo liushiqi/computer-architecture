@@ -1,0 +1,5 @@
+create_clock -period 20.000 -name clock -waveform {0.000 10.000} [get_ports clock]
+set_input_delay -clock clock [expr 4.0] [get_ports ram_address]
+set_input_delay -clock clock [expr 4.0] [get_ports ram_write_data]
+set_input_delay -clock clock [expr 4.0] [get_ports ram_write_enabled]
+set_output_delay -clock clock [expr 3.0] [all_outputs]

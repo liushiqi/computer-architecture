@@ -2,10 +2,11 @@ set command [lindex $argv 0]
 
 set part_name xc7a200tfbg676-2
 
-set project_name register_file
+set project_name distributed_ram
 
-set design_top register_file
-set simulation_top register_file_testbench
+set design_top distributed_ram_top
+
+set simulation_top distributed_ram_testbench
 
 set script_path [file dirname [info script]]
 set project_path ${script_path}/../project
@@ -51,7 +52,6 @@ proc add_project_files {} {
   add_files -norecurse -fileset sim_1 ${::simulation_path}
   add_files -norecurse -fileset constrs_1 ${::constraint_path}
   update_top_module
-
 }
 
 proc update_project_files {} {
@@ -175,7 +175,6 @@ if {${command} == "open"} {
   if {![file exists ${wave_config_file}]} {
     file mkdir ${simulation_result_path}
     file copy ${script_path}/wcfg/behav.wcfg ${simulation_result_path}
-    
   }
   add_files -norecurse -fileset sim_1 ${simulation_result_path}/behav.wcfg
 

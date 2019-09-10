@@ -113,7 +113,7 @@ proc generate_bitstream {} {
   report_timing_summary -delay_type max -max_paths 10 -file ${::report_implement_path}/post_route_timing.rpt
   report_clock_utilization -file ${::report_implement_path}/post_route_clock_util.rpt
 
-  if {${command} == "bitstream"} {
+  if {${::command} == "bitstream"} {
     # bitstream generation
     write_bitstream -force ${::bit_file}
   }
