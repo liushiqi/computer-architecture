@@ -1,11 +1,13 @@
 # Custom ignore
 **/project
+**/trace_project
 **/sim
 **/bit
 **/report
 **/.Xil
 **/.idea
 **/log
+**/xsim.dir
 
 ### Xilinx template
 # gitignore template for Xilinx Vivado Design Suite
@@ -105,8 +107,6 @@
 */*/bd/*/ip/*/*.xml
 */*/*/bd/*/ip/*/*.xml
 
-*.c
-*.h
 *.vho
 *.html
 */*/bd/*/ip/*/*.tcl
