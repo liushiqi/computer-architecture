@@ -23,12 +23,15 @@ board:
 	./run.sh board ${PARAMS} | tee log/board.log
 
 testbench:
+	make -C src/testbench clean
 	make -C src/testbench compile
 	mkdir -p sim
 	cp src/testbench/obj/data_ram.coe sim
 	cp src/testbench/obj/inst_ram.coe sim
+	cp src/testbench/obj/test.s sim
+	rm -rf project trace_project
 
-trace: src/trace.txt
+trace: sim/trace.txt
 
-src/trace.txt: sim/data_ram.coe sim/inst_ram.coe
+sim/trace.txt: sim/data_ram.coe sim/inst_ram.coe
 	vivado -nojournal -nolog -mode batch -source "$(shell pwd)/scripts/trace.tcl" -notrace -tclarg simulation

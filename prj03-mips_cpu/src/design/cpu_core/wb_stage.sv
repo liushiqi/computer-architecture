@@ -7,8 +7,10 @@ module wb_stage (
   output wb_allow_in,
   // from io data
   input io_stage_params::IOToWBData io_to_wb_bus,
+  // back pass data to id
+  output wb_stage_params::WBToIDBackPassData wb_to_id_back_pass_bus,
   // to register file: for write back
-  output wb_stage_params::WBToRegisterFileData wb_to_register_file_data,
+  output wb_stage_params::WBToRegisterFileData wb_to_register_file_bus,
   // trace debug interface
   output cpu_core_params::ProgramCount debug_program_count,
   output [3:0] debug_register_file_write_enabled,
@@ -26,11 +28,15 @@ module wb_stage (
   wire register_file_write_enabled;
   wire [4:0] register_file_write_address;
   CpuData register_file_write_data;
-  assign wb_to_register_file_data = '{
+  assign wb_to_register_file_bus = '{
     register_file_write_enabled,
     register_file_write_address,
     register_file_write_data
   };
+
+  wire [4:0] backpass_address;
+  assign backpass_address = {5{from_io_data.register_file_write_enabled & wb_valid}} & from_io_data.register_file_address;
+  assign wb_to_id_back_pass_bus = '{backpass_address};
 
   assign wb_ready_go = 1'b1;
   assign wb_allow_in = !wb_valid || wb_ready_go;
@@ -57,4 +63,4 @@ module wb_stage (
   assign debug_register_file_write_enabled = {4{register_file_write_enabled}};
   assign debug_register_file_write_address = from_io_data.register_file_address;
   assign debug_register_file_write_data = from_io_data.final_result;
-endmodule
+endmodule : wb_stage

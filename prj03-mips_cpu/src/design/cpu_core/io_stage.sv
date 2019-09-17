@@ -8,6 +8,8 @@ module io_state (
   output io_allow_in,
   // from ex data
   input ex_stage_params::EXToIOData ex_to_io_bus,
+  // back pass to id
+  output io_stage_params::IOToIDBackPassData io_to_id_back_pass_bus,
   // to wb data
   output io_stage_params::IOToWBData io_to_wb_bus,
   // from data sram
@@ -32,6 +34,10 @@ module io_state (
     from_ex_data.destination_register,
     from_ex_data.register_write
   };
+
+  wire [4:0] backpass_address;
+  assign backpass_address = {5{from_ex_data.register_write & io_valid}} & from_ex_data.destination_register;
+  assign io_to_id_back_pass_bus = '{backpass_address};
 
   assign io_ready_go = 1'b1;
   assign io_allow_in = !io_valid || io_ready_go && wb_allow_in;

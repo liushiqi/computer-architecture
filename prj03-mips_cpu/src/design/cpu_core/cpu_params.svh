@@ -56,6 +56,10 @@ package ex_stage_params;
   export cpu_core_params::ProgramCount;
 
   typedef struct packed {
+    logic [4:0] write_register;
+  } EXToIDBackPassData;
+
+  typedef struct packed {
     logic valid;
     ProgramCount program_count;
     CpuData alu_result;
@@ -70,6 +74,10 @@ package io_stage_params;
   export cpu_core_params::ProgramCount;
 
   typedef struct packed {
+    logic [4:0] write_register;
+  } IOToIDBackPassData;
+
+  typedef struct packed {
     logic valid;
     ProgramCount program_count;
     CpuData final_result;
@@ -82,6 +90,10 @@ package wb_stage_params;
   import cpu_core_params::*;
   export cpu_core_params::CpuData;
   export cpu_core_params::ProgramCount;
+
+  typedef struct packed {
+    logic [4:0] write_register;
+  } WBToIDBackPassData;
 
   typedef struct packed {
     logic write_enabled;

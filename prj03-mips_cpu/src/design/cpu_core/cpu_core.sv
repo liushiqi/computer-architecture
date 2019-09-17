@@ -30,10 +30,13 @@ module cpu_core (
   wire wb_allow_in;
   if_stage_params::IFToIDInstructionBusData if_to_id_instruction_bus;
   id_stage_params::IDToEXDecodeBusData id_to_ex_decode_bus;
-  ex_stage_params::EXToIOData ex_to_io_bus;
-  io_stage_params::IOToWBData io_to_wb_bus;
-  wb_stage_params::WBToRegisterFileData wb_to_register_file_data;
   id_stage_params::IDToIFBranchBusData id_to_if_branch_bus;
+  ex_stage_params::EXToIOData ex_to_io_bus;
+  ex_stage_params::EXToIDBackPassData ex_to_id_back_pass_bus;
+  io_stage_params::IOToWBData io_to_wb_bus;
+  io_stage_params::IOToIDBackPassData io_to_id_back_pass_bus;
+  wb_stage_params::WBToRegisterFileData wb_to_register_file_bus;
+  wb_stage_params::WBToIDBackPassData wb_to_id_back_pass_bus;
 
 // instruction fetch stage
   if_stage if_stage(
@@ -62,24 +65,30 @@ module cpu_core (
     .id_allow_in,
     // from if stage
     .if_to_id_instruction_bus,
-    //to es
+    // backpass
+    .ex_to_id_back_pass_bus,
+    .io_to_id_back_pass_bus,
+    .wb_to_id_back_pass_bus,
+    // to ex
     .id_to_ex_decode_bus,
-    //to fs
+    // to if branch
     .id_to_if_branch_bus,
     //to rf: for write back
-    .wb_to_register_file_data
+    .wb_to_register_file_bus
   );
 
 // execute stage
   ex_stage ex_stage(
     .clock,
     .reset,
-    //allowin
+    // allow in
     .io_allow_in,
     .ex_allow_in,
-    //from ds
+    // from ds
     .id_to_ex_decode_bus,
-    //to ms
+    // to id
+    .ex_to_id_back_pass_bus,
+    // to io
     .ex_to_io_bus,
     // data sram interface
     .data_enabled,
@@ -97,6 +106,8 @@ module cpu_core (
     .io_allow_in,
     // from es data
     .ex_to_io_bus,
+    // to id backpass
+    .io_to_id_back_pass_bus,
     // to io data
     .io_to_wb_bus,
     // from data sram
@@ -111,8 +122,10 @@ module cpu_core (
     .wb_allow_in,
     // from io data
     .io_to_wb_bus,
+    // to id backpass
+    .wb_to_id_back_pass_bus,
     // to register file: for write back
-    .wb_to_register_file_data,
+    .wb_to_register_file_bus,
     // trace debug interface
     .debug_program_count,
     .debug_register_file_write_enabled,

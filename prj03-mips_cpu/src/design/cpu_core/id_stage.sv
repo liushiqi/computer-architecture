@@ -8,12 +8,16 @@ module id_stage (
   output id_allow_in,
   // from if instruction bus data
   input if_stage_params::IFToIDInstructionBusData if_to_id_instruction_bus,
+  // backpass data
+  input ex_stage_params::EXToIDBackPassData ex_to_id_back_pass_bus,
+  input io_stage_params::IOToIDBackPassData io_to_id_back_pass_bus,
+  input wb_stage_params::WBToIDBackPassData wb_to_id_back_pass_bus,
   // to ex decode result data
   output id_stage_params::IDToEXDecodeBusData id_to_ex_decode_bus,
-  //to fs
+  // to fs
   output id_stage_params::IDToIFBranchBusData id_to_if_branch_bus,
   // to register file: for write back stage
-  input wb_stage_params::WBToRegisterFileData wb_to_register_file_data
+  input wb_stage_params::WBToRegisterFileData wb_to_register_file_bus
 );
   import id_stage_params::*;
   reg id_valid;
@@ -27,7 +31,7 @@ module id_stage (
   assign id_program_count = from_if_data.program_count;
 
   wb_stage_params::WBToRegisterFileData register_file_write_signals;
-  assign register_file_write_signals = wb_to_register_file_data;
+  assign register_file_write_signals = wb_to_register_file_bus;
 
   wire branch_taken;
   wire [31:0] branch_target;
@@ -109,7 +113,20 @@ module id_stage (
     alu_operation
   };
 
-  assign id_ready_go = 1'b1;
+  wire [4:0] multi_use_register_0_if_unused;
+  assign multi_use_register_0_if_unused = multi_use_register & {5{register_write & ~detination_is_multi_use}};
+  wire not_have_backpass;
+  assign not_have_backpass =
+    ((source_register == 5'b0 && multi_use_register_0_if_unused == 5'b0) || (
+      ((source_register != 5'b0) &&
+        (ex_to_id_back_pass_bus.write_register != source_register) &&
+        (io_to_id_back_pass_bus.write_register != source_register) &&
+        (wb_to_id_back_pass_bus.write_register != source_register)) ||
+      ((multi_use_register_0_if_unused != 5'b0) && 
+        (ex_to_id_back_pass_bus.write_register != multi_use_register) &&
+        (io_to_id_back_pass_bus.write_register != multi_use_register) &&
+        (wb_to_id_back_pass_bus.write_register != multi_use_register))));
+  assign id_ready_go = not_have_backpass;
   assign id_allow_in = !id_valid || (id_ready_go && ex_allow_in);
   assign id_to_ex_valid = id_valid && id_ready_go;
   always_ff @(posedge clock) begin
