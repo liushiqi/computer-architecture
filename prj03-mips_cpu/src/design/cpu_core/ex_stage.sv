@@ -23,7 +23,7 @@ module ex_stage (
   wire ex_ready_go;
   wire ex_to_io_valid;
 
-  id_stage_params::IDToEXDecodeBusData from_id_data;
+  id_stage_params::IDToEXDecodeBusData from_id_data; // reg
   ProgramCount ex_program_count;
   assign ex_program_count = from_id_data.program_count;
 
@@ -35,12 +35,12 @@ module ex_stage (
 
   assign result_is_from_memory = from_id_data.is_load_operation;
   assign ex_to_io_bus = '{
-    ex_to_io_valid,
-    ex_program_count,
-    alu_result,
-    from_id_data.destination_register,
-    from_id_data.register_write,
-    result_is_from_memory
+    valid: ex_to_io_valid,
+    program_count: ex_program_count,
+    alu_result: alu_result,
+    destination_register: from_id_data.destination_register,
+    register_write: from_id_data.register_write,
+    result_is_from_memory: result_is_from_memory
   };
 
   wire [4:0] backpass_address;

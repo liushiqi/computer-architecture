@@ -24,7 +24,7 @@ module id_stage (
   wire id_ready_go;
   wire id_to_ex_valid;
 
-  if_stage_params::IFToIDInstructionBusData from_if_data;
+  if_stage_params::IFToIDInstructionBusData from_if_data; // reg
   CpuData id_instruction;
   ProgramCount id_program_count;
   assign id_instruction = from_if_data.instruction;

@@ -2,15 +2,15 @@ module register_file(
   input clock,
   input reset,
   input [4:0] read_address_1,
-  output [31:0] read_data_1,
+  output cpu_core_params::CpuData read_data_1,
   input [4:0] read_address_2,
-  output [31:0] read_data_2,
+  output cpu_core_params::CpuData read_data_2,
   input write_enabled,
   input [4:0] write_address,
-  input [31:0] write_data
+  input cpu_core_params::CpuData write_data
 );
-  reg [31:0] data [31:1];
-  wire [31:0] read_data [31:0];
+  cpu_core_params::CpuData data [31:1];
+  cpu_core_params::CpuData read_data [31:0];
 
   assign read_data[0] = 32'b0;
   generate

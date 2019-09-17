@@ -35,3 +35,7 @@ trace: sim/trace.txt
 
 sim/trace.txt: sim/data_ram.coe sim/inst_ram.coe
 	vivado -nojournal -nolog -mode batch -source "$(shell pwd)/scripts/trace.tcl" -notrace -tclarg simulation
+
+clean:
+	make -C src/testbench clean
+	rm -rf project trace_project xsim.dir xvlog.pb .Xil .idea

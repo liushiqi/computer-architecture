@@ -27,15 +27,15 @@ module if_stage (
   ProgramCount next_program_count;
 
   CpuData if_instruction;
-  CpuData if_program_count;
+  CpuData if_program_count; // reg
   assign if_to_id_instruction_bus = '{if_to_id_valid, if_program_count, if_instruction};
 
-// pre-I;F stage
+// pre-if stage
   assign to_if_valid = ~reset;
   assign sequence_program_count = if_program_count + 3'h4;
   assign next_program_count = id_to_if_branch_bus.taken ? id_to_if_branch_bus.target : sequence_program_count;
 
-// IF stage
+// if stage
   assign if_ready_go = 1'b1;
   assign if_allow_in = !if_valid || (if_ready_go && id_allow_in);
   assign if_to_id_valid = if_valid && if_ready_go;

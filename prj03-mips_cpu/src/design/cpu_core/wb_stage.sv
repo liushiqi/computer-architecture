@@ -21,7 +21,7 @@ module wb_stage (
   reg wb_valid;
   wire wb_ready_go;
 
-  io_stage_params::IOToWBData from_io_data;
+  io_stage_params::IOToWBData from_io_data; // reg
   ProgramCount wb_program_count;
   assign wb_program_count = from_io_data.program_count;
 

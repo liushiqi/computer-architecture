@@ -20,7 +20,7 @@ module io_state (
   wire io_ready_go;
   wire io_to_wb_valid;
 
-  ex_stage_params::EXToIOData from_ex_data;
+  ex_stage_params::EXToIOData from_ex_data; // reg
   ProgramCount io_program_count;
   assign io_program_count = from_ex_data.program_count;
 
