@@ -28,7 +28,11 @@ module if_stage (
 
   CpuData if_instruction;
   CpuData if_program_count; // reg
-  assign if_to_id_instruction_bus = '{if_to_id_valid, if_program_count, if_instruction};
+  assign if_to_id_instruction_bus = '{
+    valid: if_to_id_valid,
+    program_count: if_program_count,
+    instruction: if_instruction
+  };
 
 // pre-if stage
   assign to_if_valid = ~reset;

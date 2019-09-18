@@ -1,4 +1,7 @@
-PARAMS = ""
+PARAMS := ""
+TESTBENCH = 3
+
+TESTBENCH_DIR := "src/testbench/test$(shell printf "%02d" ${TESTBENCH})"
 
 all: open
 
@@ -23,12 +26,12 @@ board:
 	./run.sh board ${PARAMS} | tee log/board.log
 
 testbench:
-	make -C src/testbench clean
-	make -C src/testbench compile
+	make -C ${TESTBENCH_DIR} clean
+	make -C ${TESTBENCH_DIR} compile
 	mkdir -p sim
-	cp src/testbench/obj/data_ram.coe sim
-	cp src/testbench/obj/inst_ram.coe sim
-	cp src/testbench/obj/test.s sim
+	cp ${TESTBENCH_DIR}/obj/data_ram.coe sim
+	cp ${TESTBENCH_DIR}/obj/inst_ram.coe sim
+	cp ${TESTBENCH_DIR}/obj/test.s sim
 	rm -rf project trace_project
 
 trace: sim/trace.txt

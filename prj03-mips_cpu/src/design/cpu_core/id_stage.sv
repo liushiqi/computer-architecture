@@ -49,6 +49,7 @@ module id_stage (
   wire [15:0] immediate;
   wire [31:0] source_register_value;
   wire [31:0] multi_use_register_value;
+  wire multi_use_register_is_used;
 
   wire [5:0] operation_code;
   wire [4:0] source_register;
@@ -94,38 +95,41 @@ module id_stage (
 
   wire source_registers_are_equal;
 
-  assign id_to_if_branch_bus = {branch_taken, branch_target};
+  assign id_to_if_branch_bus = '{
+    taken: branch_taken,
+    target: branch_target
+  };
 
   assign id_to_ex_decode_bus = '{
-    id_to_ex_valid,
-    id_program_count,
-    multi_use_register_value,
-    source_register_value,
-    immediate,
-    write_register,
-    memory_write,
-    register_write,
-    source2_is_8,
-    source2_is_immediate,
-    source1_is_program_count,
-    source1_is_shift_amount,
-    is_load_operation,
-    alu_operation
+    valid: id_to_ex_valid,
+    program_count: id_program_count,
+    multi_use_register_value: multi_use_register_value,
+    source_register_value: source_register_value,
+    immediate: immediate,
+    destination_register: write_register,
+    memory_write: memory_write,
+    register_write: register_write,
+    source2_is_8: source2_is_8,
+    source2_is_immediate: source2_is_immediate,
+    source1_is_program_count: source1_is_program_count,
+    source1_is_shift_amount: source1_is_shift_amount,
+    is_load_operation: is_load_operation,
+    alu_operation: alu_operation
   };
 
   wire [4:0] multi_use_register_0_if_unused;
-  assign multi_use_register_0_if_unused = multi_use_register & {5{register_write & ~detination_is_multi_use}};
+  assign multi_use_register_0_if_unused = multi_use_register & {5{multi_use_register_is_used}};
   wire not_have_backpass;
   assign not_have_backpass =
     ((source_register == 5'b0 && multi_use_register_0_if_unused == 5'b0) || (
-      ((source_register != 5'b0) &&
-        (ex_to_id_back_pass_bus.write_register != source_register) &&
-        (io_to_id_back_pass_bus.write_register != source_register) &&
-        (wb_to_id_back_pass_bus.write_register != source_register)) ||
-      ((multi_use_register_0_if_unused != 5'b0) && 
-        (ex_to_id_back_pass_bus.write_register != multi_use_register) &&
-        (io_to_id_back_pass_bus.write_register != multi_use_register) &&
-        (wb_to_id_back_pass_bus.write_register != multi_use_register))));
+      ((source_register == 5'b0) ||
+        ((ex_to_id_back_pass_bus.write_register != source_register) &&
+          (io_to_id_back_pass_bus.write_register != source_register) &&
+          (wb_to_id_back_pass_bus.write_register != source_register))) &&
+      ((multi_use_register_0_if_unused == 5'b0) ||
+        ((ex_to_id_back_pass_bus.write_register != multi_use_register) &&
+          (io_to_id_back_pass_bus.write_register != multi_use_register) &&
+          (wb_to_id_back_pass_bus.write_register != multi_use_register)))));
   assign id_ready_go = not_have_backpass;
   assign id_allow_in = !id_valid || (id_ready_go && ex_allow_in);
   assign id_to_ex_valid = id_valid && id_ready_go;
@@ -202,6 +206,7 @@ module id_stage (
   assign register_write = ~instruction_sw & ~instruction_beq & ~instruction_bne & ~instruction_jr;
   assign memory_write = instruction_sw;
   assign is_load_operation = instruction_lw;
+  assign multi_use_register_is_used = instruction_addu | instruction_and | instruction_beq | instruction_bne | instruction_nor | instruction_or | instruction_sll | instruction_slt | instruction_sltu | instruction_sra | instruction_srl | instruction_subu | instruction_sw | instruction_xor;
 
   assign write_register = destination_is_register31 ? 5'd31 : detination_is_multi_use ? multi_use_register : destination_register;
 
@@ -223,7 +228,10 @@ module id_stage (
   assign multi_use_register_value = register_file_read_data_2;
 
   assign source_registers_are_equal = (source_register_value == multi_use_register_value);
-  assign branch_taken = ((instruction_beq && source_registers_are_equal) || (instruction_bne && !source_registers_are_equal) || instruction_jal || instruction_jr) && id_valid;
+  assign branch_taken = 
+    ((instruction_beq && source_registers_are_equal) ||
+      (instruction_bne && !source_registers_are_equal) ||
+      instruction_jal || instruction_jr) && id_valid;
   assign branch_target =
     (instruction_beq || instruction_bne) ? (if_to_id_instruction_bus.program_count + {{14{immediate[15]}}, immediate[15:0], 2'b0}) :
     (instruction_jr) ? source_register_value : {if_to_id_instruction_bus.program_count[31:28], jump_address[25:0], 2'b0};

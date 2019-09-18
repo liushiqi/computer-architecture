@@ -29,14 +29,18 @@ module wb_stage (
   wire [4:0] register_file_write_address;
   CpuData register_file_write_data;
   assign wb_to_register_file_bus = '{
-    register_file_write_enabled,
-    register_file_write_address,
-    register_file_write_data
+    write_enabled: register_file_write_enabled,
+    write_address: register_file_write_address,
+    write_data: register_file_write_data
   };
 
   wire [4:0] backpass_address;
   assign backpass_address = {5{from_io_data.register_file_write_enabled & wb_valid}} & from_io_data.register_file_address;
-  assign wb_to_id_back_pass_bus = '{backpass_address};
+  assign wb_to_id_back_pass_bus = '{
+    valid: 1'b1,
+    write_register: backpass_address,
+    write_data: register_file_write_data
+  };
 
   assign wb_ready_go = 1'b1;
   assign wb_allow_in = !wb_valid || wb_ready_go;
