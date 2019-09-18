@@ -34,11 +34,9 @@ module wb_stage (
     write_data: register_file_write_data
   };
 
-  wire [4:0] backpass_address;
-  assign backpass_address = {5{from_io_data.register_file_write_enabled & wb_valid}} & from_io_data.register_file_address;
   assign wb_to_id_back_pass_bus = '{
-    valid: 1'b1,
-    write_register: backpass_address,
+    valid: from_io_data.register_file_write_enabled & wb_valid,
+    write_register: from_io_data.register_file_address,
     write_data: register_file_write_data
   };
 

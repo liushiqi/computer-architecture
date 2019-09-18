@@ -119,18 +119,13 @@ module id_stage (
 
   wire [4:0] multi_use_register_0_if_unused;
   assign multi_use_register_0_if_unused = multi_use_register & {5{multi_use_register_is_used}};
-  wire not_have_backpass;
-  assign not_have_backpass =
-    ((source_register == 5'b0 && multi_use_register_0_if_unused == 5'b0) || (
-      ((source_register == 5'b0) ||
-        ((ex_to_id_back_pass_bus.write_register != source_register) &&
-          (io_to_id_back_pass_bus.write_register != source_register) &&
-          (wb_to_id_back_pass_bus.write_register != source_register))) &&
-      ((multi_use_register_0_if_unused == 5'b0) ||
-        ((ex_to_id_back_pass_bus.write_register != multi_use_register) &&
-          (io_to_id_back_pass_bus.write_register != multi_use_register) &&
-          (wb_to_id_back_pass_bus.write_register != multi_use_register)))));
-  assign id_ready_go = not_have_backpass;
+  wire id_should_be_blocked;
+  assign id_should_be_blocked =
+    ex_to_id_back_pass_bus.valid &&
+    ~ex_to_id_back_pass_bus.data_valid &&
+    (ex_to_id_back_pass_bus.write_register == source_register ||
+      ex_to_id_back_pass_bus.write_register == multi_use_register_0_if_unused);
+  assign id_ready_go = ~id_should_be_blocked;
   assign id_allow_in = !id_valid || (id_ready_go && ex_allow_in);
   assign id_to_ex_valid = id_valid && id_ready_go;
   always_ff @(posedge clock) begin
@@ -224,8 +219,14 @@ module id_stage (
     .write_data(register_file_write_signals.write_data)
   );
 
-  assign source_register_value = register_file_read_data_1;
-  assign multi_use_register_value = register_file_read_data_2;
+  assign source_register_value =
+    (ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == source_register) ? ex_to_id_back_pass_bus.write_data :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_register == source_register) ? io_to_id_back_pass_bus.write_data :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_register == source_register) ? wb_to_id_back_pass_bus.write_data : register_file_read_data_1;
+  assign multi_use_register_value =
+    (ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == multi_use_register) ? ex_to_id_back_pass_bus.write_data :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_register == multi_use_register) ? io_to_id_back_pass_bus.write_data :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_register == multi_use_register) ? wb_to_id_back_pass_bus.write_data : register_file_read_data_2;
 
   assign source_registers_are_equal = (source_register_value == multi_use_register_value);
   assign branch_taken = 

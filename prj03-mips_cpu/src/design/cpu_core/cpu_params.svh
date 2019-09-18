@@ -58,6 +58,7 @@ package ex_stage_params;
   typedef struct packed {
     logic valid;
     logic [4:0] write_register;
+    logic data_valid;
     CpuData write_data;
   } EXToIDBackPassData;
 
