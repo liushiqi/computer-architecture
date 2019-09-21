@@ -1,7 +1,8 @@
 PARAMS := ""
 TESTBENCH = 3
 
-TESTBENCH_DIR := "src/testbench/test$(shell printf "%02d" ${TESTBENCH})"
+TESTBENCH_DIR := "${TESTBENCH_BASE_DIR}/test$(shell printf "%02d" ${TESTBENCH})"
+TESTBENCH_BASE_DIR = src/testbench
 
 all: open
 
@@ -40,5 +41,7 @@ sim/trace.txt: sim/data_ram.coe sim/inst_ram.coe
 	vivado -nojournal -nolog -mode batch -source "$(shell pwd)/scripts/trace.tcl" -notrace -tclarg simulation
 
 clean:
-	make -C src/testbench clean
+	for dir in ${TESTBENCH_BASE_DIR}/*; do \
+	  make -C $${dir} clean; \
+	done
 	rm -rf project trace_project xsim.dir xvlog.pb .Xil .idea
