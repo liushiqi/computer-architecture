@@ -1,4 +1,4 @@
-module register_file(
+module register_file (
   input clock,
   input reset,
   input [4:0] read_address_1,
