@@ -47,9 +47,7 @@ module ex_stage (
   assign backpass_address = {5{from_id_data.register_write & ex_valid}} & from_id_data.destination_register;
   assign ex_to_id_back_pass_bus = '{
     valid: from_id_data.register_write & ex_valid,
-    write_register: from_id_data.destination_register,
-    data_valid: ~result_is_from_memory,
-    write_data: alu_result
+    write_register: from_id_data.destination_register
   };
 
   assign ex_ready_go = 1'b1;

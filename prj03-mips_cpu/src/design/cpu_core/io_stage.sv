@@ -38,7 +38,10 @@ module io_state (
   assign io_to_id_back_pass_bus = '{
     valid: from_ex_data.register_write & io_valid,
     write_register: from_ex_data.destination_register,
-    write_data: final_result
+    write_data: final_result,
+    previous_valid: from_ex_data.valid & ~from_ex_data.result_is_from_memory & from_ex_data.register_write,
+    previous_write_register: from_ex_data.destination_register,
+    previous_write_data: from_ex_data.alu_result
   };
 
   assign io_ready_go = 1'b1;
@@ -53,7 +56,9 @@ module io_state (
   end
 
   always_ff @(posedge clock) begin
-    if (ex_to_io_bus.valid && io_allow_in) begin
+    if (reset) begin
+      from_ex_data.valid <= 0;
+    end if (ex_to_io_bus.valid && io_allow_in) begin
       from_ex_data <= ex_to_io_bus;
     end
   end

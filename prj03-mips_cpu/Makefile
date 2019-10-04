@@ -1,8 +1,8 @@
 PARAMS := ""
 TESTBENCH = 3
 
-TESTBENCH_DIR := "${TESTBENCH_BASE_DIR}/test$(shell printf "%02d" ${TESTBENCH})"
 TESTBENCH_BASE_DIR = src/testbench
+TESTBENCH_DIR := "${TESTBENCH_BASE_DIR}/test$(shell printf "%02d" ${TESTBENCH})"
 
 all: open
 
