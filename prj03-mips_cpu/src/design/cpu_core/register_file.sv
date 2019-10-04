@@ -1,6 +1,5 @@
 module register_file (
   input clock,
-  input reset,
   input [4:0] read_address_1,
   output cpu_core_params::CpuData read_data_1,
   input [4:0] read_address_2,

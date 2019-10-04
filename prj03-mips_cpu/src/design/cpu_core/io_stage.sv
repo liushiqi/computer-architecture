@@ -62,4 +62,3 @@ module io_state (
 
   assign final_result = from_ex_data.result_is_from_memory ? memory_read_result : from_ex_data.alu_result;
 endmodule : io_state
-

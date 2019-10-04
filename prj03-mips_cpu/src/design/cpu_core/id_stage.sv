@@ -209,7 +209,6 @@ module id_stage (
   assign register_file_read_address_2 = multi_use_register;
   register_file u_regfile(
     .clock(clock),
-    .reset(reset),
     .read_address_1(register_file_read_address_1),
     .read_data_1(register_file_read_data_1),
     .read_address_2(register_file_read_address_2),
