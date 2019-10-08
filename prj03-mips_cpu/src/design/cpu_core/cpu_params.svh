@@ -38,6 +38,7 @@ package id_stage_params;
     logic register_write;
     logic source2_is_8;
     logic source2_is_immediate;
+    logic source2_is_unsigned;
     logic source1_is_program_count;
     logic source1_is_shift_amount;
     logic is_load_operation;
@@ -109,5 +110,19 @@ package wb_stage_params;
     CpuData write_data;
   } WBToRegisterFileData;
 endpackage : wb_stage_params
+
+package multiplier_params;
+  import cpu_core_params::*;
+  export cpu_core_params::CpuData;
+  export cpu_core_params::CPU_DATA_WIDTH;
+
+  typedef logic [CPU_DATA_WIDTH * 2 - 1:0] MultiplyResultData;
+
+  typedef struct {
+     logic valid;
+     logic [CPU_DATA_WIDTH / 2:0] wallace_input [CPU_DATA_WIDTH * 2 + 2];
+     logic [CPU_DATA_WIDTH / 2:0] carry_input;
+  } Stage1ToStage2BusData;
+endpackage : multiplier_params
 
 `endif

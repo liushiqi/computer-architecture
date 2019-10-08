@@ -41,6 +41,7 @@ module id_stage (
   wire source1_is_shift_amount;
   wire source1_is_program_count;
   wire source2_is_immediate;
+  wire source2_is_unsigned;
   wire source2_is_8;
   wire result_from_memory;
   wire register_write;
@@ -65,25 +66,36 @@ module id_stage (
   wire [31:0] shift_amount_decoded;
   wire [63:0] function_code_decoded;
 
-  wire instruction_addu;
-  wire instruction_subu;
-  wire instruction_slt;
-  wire instruction_sltu;
-  wire instruction_and;
-  wire instruction_or;
-  wire instruction_xor;
-  wire instruction_nor;
-  wire instruction_sll;
-  wire instruction_srl;
-  wire instruction_sra;
+  wire instruction_add;
+  wire instruction_addi;
   wire instruction_addiu;
-  wire instruction_lui;
-  wire instruction_lw;
-  wire instruction_sw;
+  wire instruction_addu;
+  wire instruction_and;
+  wire instruction_andi;
   wire instruction_beq;
   wire instruction_bne;
   wire instruction_jal;
   wire instruction_jr;
+  wire instruction_lui;
+  wire instruction_lw;
+  wire instruction_nor;
+  wire instruction_or;
+  wire instruction_ori;
+  wire instruction_sll;
+  wire instruction_sllv;
+  wire instruction_slt;
+  wire instruction_slti;
+  wire instruction_sltiu;
+  wire instruction_sltu;
+  wire instruction_sra;
+  wire instruction_srav;
+  wire instruction_srl;
+  wire instruction_srlv;
+  wire instruction_sub;
+  wire instruction_subu;
+  wire instruction_sw;
+  wire instruction_xor;
+  wire instruction_xori;
 
   wire destination_is_register31;
   wire detination_is_multi_use;
@@ -111,6 +123,7 @@ module id_stage (
     register_write: register_write,
     source2_is_8: source2_is_8,
     source2_is_immediate: source2_is_immediate,
+    source2_is_unsigned: source2_is_unsigned,
     source1_is_program_count: source1_is_program_count,
     source1_is_shift_amount: source1_is_shift_amount,
     is_load_operation: is_load_operation,
@@ -160,50 +173,62 @@ module id_stage (
   decoder_5_to_32 u_decoder_destination(.in(destination_register), .out(destination_register_decoded));
   decoder_5_to_32 u_decoder_shift_amount(.in(shift_amount), .out(shift_amount_decoded));
 
-  assign instruction_addu = operation_code_decoded[6'h00] & function_code_decoded[6'h21] & shift_amount_decoded[5'h00];
-  assign instruction_subu = operation_code_decoded[6'h00] & function_code_decoded[6'h23] & shift_amount_decoded[5'h00];
-  assign instruction_slt = operation_code_decoded[6'h00] & function_code_decoded[6'h2a] & shift_amount_decoded[5'h00];
-  assign instruction_sltu = operation_code_decoded[6'h00] & function_code_decoded[6'h2b] & shift_amount_decoded[5'h00];
-  assign instruction_and = operation_code_decoded[6'h00] & function_code_decoded[6'h24] & shift_amount_decoded[5'h00];
-  assign instruction_or = operation_code_decoded[6'h00] & function_code_decoded[6'h25] & shift_amount_decoded[5'h00];
-  assign instruction_xor = operation_code_decoded[6'h00] & function_code_decoded[6'h26] & shift_amount_decoded[5'h00];
-  assign instruction_nor = operation_code_decoded[6'h00] & function_code_decoded[6'h27] & shift_amount_decoded[5'h00];
-  assign instruction_sll = operation_code_decoded[6'h00] & function_code_decoded[6'h00] & source_register_decoded[5'h00];
-  assign instruction_srl = operation_code_decoded[6'h00] & function_code_decoded[6'h02] & source_register_decoded[5'h00];
-  assign instruction_sra = operation_code_decoded[6'h00] & function_code_decoded[6'h03] & source_register_decoded[5'h00];
+  assign instruction_add = operation_code_decoded[6'h00] & function_code_decoded[6'h20] & shift_amount_decoded[5'h00];
+  assign instruction_addi = operation_code_decoded[6'h08];
   assign instruction_addiu = operation_code_decoded[6'h09];
-  assign instruction_lui = operation_code_decoded[6'h0f] & source_register_decoded[5'h00];
-  assign instruction_lw = operation_code_decoded[6'h23];
-  assign instruction_sw = operation_code_decoded[6'h2b];
+  assign instruction_addu = operation_code_decoded[6'h00] & function_code_decoded[6'h21] & shift_amount_decoded[5'h00];
+  assign instruction_and = operation_code_decoded[6'h00] & function_code_decoded[6'h24] & shift_amount_decoded[5'h00];
+  assign instruction_andi = operation_code_decoded[6'h0c];
   assign instruction_beq = operation_code_decoded[6'h04];
   assign instruction_bne = operation_code_decoded[6'h05];
   assign instruction_jal = operation_code_decoded[6'h03];
   assign instruction_jr = operation_code_decoded[6'h00] & function_code_decoded[6'h08] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_lui = operation_code_decoded[6'h0f] & source_register_decoded[5'h00];
+  assign instruction_lw = operation_code_decoded[6'h23];
+  assign instruction_nor = operation_code_decoded[6'h00] & function_code_decoded[6'h27] & shift_amount_decoded[5'h00];
+  assign instruction_or = operation_code_decoded[6'h00] & function_code_decoded[6'h25] & shift_amount_decoded[5'h00];
+  assign instruction_ori = operation_code_decoded[6'h0d];
+  assign instruction_sll = operation_code_decoded[6'h00] & function_code_decoded[6'h00] & source_register_decoded[5'h00];
+  assign instruction_sllv = operation_code_decoded[6'h00] & function_code_decoded[6'h04] & shift_amount_decoded[5'h00];
+  assign instruction_slt = operation_code_decoded[6'h00] & function_code_decoded[6'h2a] & shift_amount_decoded[5'h00];
+  assign instruction_slti = operation_code_decoded[6'h0a];
+  assign instruction_sltiu = operation_code_decoded[6'h0b];
+  assign instruction_sltu = operation_code_decoded[6'h00] & function_code_decoded[6'h2b] & shift_amount_decoded[5'h00];
+  assign instruction_sra = operation_code_decoded[6'h00] & function_code_decoded[6'h03] & source_register_decoded[5'h00];
+  assign instruction_srav = operation_code_decoded[6'h00] & function_code_decoded[6'h07] & shift_amount_decoded[5'h00];
+  assign instruction_srl = operation_code_decoded[6'h00] & function_code_decoded[6'h02] & source_register_decoded[5'h00];
+  assign instruction_srlv = operation_code_decoded[6'h00] & function_code_decoded[6'h06] & shift_amount_decoded[5'h00];
+  assign instruction_sub = operation_code_decoded[6'h00] & function_code_decoded[6'h22] & shift_amount_decoded[5'h00];
+  assign instruction_subu = operation_code_decoded[6'h00] & function_code_decoded[6'h23] & shift_amount_decoded[5'h00];
+  assign instruction_sw = operation_code_decoded[6'h2b];
+  assign instruction_xor = operation_code_decoded[6'h00] & function_code_decoded[6'h26] & shift_amount_decoded[5'h00];
+  assign instruction_xori = operation_code_decoded[6'h0e];
 
-  assign alu_operation[0] = instruction_addu | instruction_addiu | instruction_lw | instruction_sw | instruction_jal;
-  assign alu_operation[1] = instruction_subu;
-  assign alu_operation[2] = instruction_slt;
-  assign alu_operation[3] = instruction_sltu;
-  assign alu_operation[4] = instruction_and;
+  assign alu_operation[0] = instruction_add | instruction_addi | instruction_addiu | instruction_addu | instruction_jal | instruction_lw | instruction_sw;
+  assign alu_operation[1] = instruction_sub | instruction_subu;
+  assign alu_operation[2] = instruction_slt | instruction_slti;
+  assign alu_operation[3] = instruction_sltiu | instruction_sltu;
+  assign alu_operation[4] = instruction_and | instruction_andi;
   assign alu_operation[5] = instruction_nor;
-  assign alu_operation[6] = instruction_or;
-  assign alu_operation[7] = instruction_xor;
-  assign alu_operation[8] = instruction_sll;
-  assign alu_operation[9] = instruction_srl;
-  assign alu_operation[10] = instruction_sra;
+  assign alu_operation[6] = instruction_or | instruction_ori;
+  assign alu_operation[7] = instruction_xor | instruction_xori;
+  assign alu_operation[8] = instruction_sll | instruction_sllv;
+  assign alu_operation[9] = instruction_srl | instruction_srlv;
+  assign alu_operation[10] = instruction_sra | instruction_srav;
   assign alu_operation[11] = instruction_lui;
 
   assign source1_is_shift_amount = instruction_sll | instruction_srl | instruction_sra;
   assign source1_is_program_count = instruction_jal;
-  assign source2_is_immediate = instruction_addiu | instruction_lui | instruction_lw | instruction_sw;
+  assign source2_is_immediate = instruction_addi | instruction_addiu | instruction_andi | instruction_lui | instruction_lw | instruction_ori | instruction_slti | instruction_sltiu | instruction_sw | instruction_xori;
+  assign source2_is_unsigned = instruction_andi | instruction_ori | instruction_xori;
   assign source2_is_8 = instruction_jal;
   assign result_from_memory = instruction_lw;
   assign destination_is_register31 = instruction_jal;
-  assign detination_is_multi_use = instruction_addiu | instruction_lui | instruction_lw;
-  assign register_write = ~instruction_sw & ~instruction_beq & ~instruction_bne & ~instruction_jr;
+  assign detination_is_multi_use = instruction_addi | instruction_addiu | instruction_andi | instruction_lui | instruction_lw | instruction_ori | instruction_slti | instruction_sltiu | instruction_xori;
+  assign register_write = ~instruction_beq & ~instruction_bne & ~instruction_jr & ~instruction_sw;
   assign memory_write = instruction_sw;
   assign is_load_operation = instruction_lw;
-  assign multi_use_register_is_used = instruction_addu | instruction_and | instruction_beq | instruction_bne | instruction_nor | instruction_or | instruction_sll | instruction_slt | instruction_sltu | instruction_sra | instruction_srl | instruction_subu | instruction_sw | instruction_xor;
+  assign multi_use_register_is_used = ~instruction_addi & ~instruction_addiu & ~instruction_andi & ~instruction_jal & ~instruction_jr & ~instruction_lui & ~instruction_lw & ~instruction_ori & ~instruction_slti & ~instruction_sltiu & ~instruction_xori;
 
   assign write_register = destination_is_register31 ? 5'd31 : detination_is_multi_use ? multi_use_register : destination_register;
 

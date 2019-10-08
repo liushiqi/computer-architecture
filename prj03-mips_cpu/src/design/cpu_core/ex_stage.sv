@@ -71,7 +71,7 @@ module ex_stage (
     from_id_data.source1_is_shift_amount ? {27'b0, from_id_data.immediate[10:6]} :
     from_id_data.source1_is_program_count ? from_id_data.program_count[31:0] : from_id_data.source_register_value;
   assign alu_input2 =
-    from_id_data.source2_is_immediate ? {{16{from_id_data.immediate[15]}}, from_id_data.immediate[15:0]} :
+    from_id_data.source2_is_immediate ? {{16{~from_id_data.source2_is_unsigned & from_id_data.immediate[15]}}, from_id_data.immediate[15:0]} :
     from_id_data.source2_is_8 ? 32'd8 : from_id_data.multi_use_register_value;
 
   alu u_alu(

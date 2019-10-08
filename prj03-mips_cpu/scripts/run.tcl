@@ -16,8 +16,9 @@ set design_path ${source_path}/design
 set simulation_path ${source_path}/simulation
 set constraint_path ${source_path}/constraint
 
+set sim_name behav
+
 set simulation_result_path ${script_path}/../sim
-set wave_config_file ${simulation_result_path}/behav.wcfg
 
 set bit_path ${script_path}/../bit
 set bit_file ${bit_path}/system.bit
@@ -68,7 +69,6 @@ proc add_project_files {} {
   add_files -fileset sim_1 ${::simulation_path}
   add_files -fileset constrs_1 ${::constraint_path}
   update_top_module
-
 }
 
 proc update_project_files {} {
@@ -171,25 +171,19 @@ source ${script_path}/external.tcl
 if {${command} == "open"} {
   start_gui
 } elseif {${command} == "simulation"} {
+  set wave_config_file ${simulation_result_path}/${sim_name}.wcfg
+  puts ${wave_config_file}
   # Create sim path
   if {![file exists ${wave_config_file}]} {
     file mkdir ${simulation_result_path}
-    file copy ${script_path}/wcfg/behav.wcfg ${simulation_result_path}
+    file copy ${script_path}/wcfg/behav.wcfg ${wave_config_file}
   }
-  add_files -norecurse -fileset sim_1 ${simulation_result_path}/behav.wcfg
-
-  # Parse sim time
-  if {${argc} >= 2} {
-    set sim_time [lindex $argv 1]
-  } else {
-    set sim_time 10
-  }
+  add_files -norecurse -fileset sim_1 ${wave_config_file}
 
   # Do simulation
   set_property verilog_define "TRACE_REF_FILE=\"${simulation_result_path}/trace.txt\"" [get_filesets sim_1]
-  set_property runtime ${sim_time}us [get_filesets sim_1]
   set_property target_simulator "XSim" [current_project]
-  set_property xsim.view ${simulation_result_path}/behav.wcfg [get_filesets sim_1]
+  set_property xsim.view ${wave_config_file} [get_filesets sim_1]
   launch_simulation -mode behavioral
   run -all
   start_gui

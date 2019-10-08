@@ -95,3 +95,10 @@ if {![file exists ${values::ip_gen_loc}/${ip_name}/${ip_name}.xci]} {
 if {${::command} == "bitstream" || ${::command} == "implementation"} {
   synth_ip [get_ips ${ip_name}]
 }
+
+if {${::command} == "simulation"} {
+  if {${::argc} >= 2} {
+    set ::sim_name multiply
+    set_property top [lindex ${::argv} 1] [get_filesets sim_1]
+  }
+}
