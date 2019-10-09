@@ -98,7 +98,8 @@ if {${::command} == "bitstream" || ${::command} == "implementation"} {
 
 if {${::command} == "simulation"} {
   if {${::argc} >= 2} {
-    set ::sim_name multiply
-    set_property top [lindex ${::argv} 1] [get_filesets sim_1]
+    set name [lindex ${::argv} 1]
+    set ::sim_name ${name}_behav
+    set_property top ${name}_testbench [get_filesets sim_1]
   }
 }

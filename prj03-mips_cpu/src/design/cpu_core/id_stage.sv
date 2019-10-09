@@ -43,6 +43,12 @@ module id_stage (
   wire source2_is_immediate;
   wire source2_is_unsigned;
   wire source2_is_8;
+  wire multiply_valid;
+  wire divide_valid;
+  wire multiply_divide_signed;
+  wire result_high;
+  wire result_low;
+  wire high_low_write;
   wire result_from_memory;
   wire register_write;
   wire memory_write;
@@ -74,10 +80,18 @@ module id_stage (
   wire instruction_andi;
   wire instruction_beq;
   wire instruction_bne;
+  wire instruction_div;
+  wire instruction_divu;
   wire instruction_jal;
   wire instruction_jr;
   wire instruction_lui;
   wire instruction_lw;
+  wire instruction_mfhi;
+  wire instruction_mflo;
+  wire instruction_mthi;
+  wire instruction_mtlo;
+  wire instruction_mult;
+  wire instruction_multu;
   wire instruction_nor;
   wire instruction_or;
   wire instruction_ori;
@@ -127,6 +141,12 @@ module id_stage (
     source1_is_program_count: source1_is_program_count,
     source1_is_shift_amount: source1_is_shift_amount,
     is_load_operation: is_load_operation,
+    multiply_valid: multiply_valid,
+    divide_valid: divide_valid,
+    multiply_divide_signed: multiply_divide_signed,
+    result_high: result_high,
+    result_low: result_low,
+    high_low_write: high_low_write,
     alu_operation: alu_operation
   };
 
@@ -181,10 +201,18 @@ module id_stage (
   assign instruction_andi = operation_code_decoded[6'h0c];
   assign instruction_beq = operation_code_decoded[6'h04];
   assign instruction_bne = operation_code_decoded[6'h05];
+  assign instruction_div = operation_code_decoded[6'h00] & function_code_decoded[6'h1a] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_divu = operation_code_decoded[6'h00] & function_code_decoded[6'h1b] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_jal = operation_code_decoded[6'h03];
   assign instruction_jr = operation_code_decoded[6'h00] & function_code_decoded[6'h08] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_lui = operation_code_decoded[6'h0f] & source_register_decoded[5'h00];
   assign instruction_lw = operation_code_decoded[6'h23];
+  assign instruction_mfhi = operation_code_decoded[6'h00] & function_code_decoded[6'h10] & source_register_decoded[5'h00] & multi_use_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_mflo = operation_code_decoded[6'h00] & function_code_decoded[6'h12] & source_register_decoded[5'h00] & multi_use_register_decoded[5'h00] &  shift_amount_decoded[5'h00];
+  assign instruction_mthi = operation_code_decoded[6'h00] & function_code_decoded[6'h11] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_mtlo = operation_code_decoded[6'h00] & function_code_decoded[6'h13] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_mult = operation_code_decoded[6'h00] & function_code_decoded[6'h18] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_multu = operation_code_decoded[6'h00] & function_code_decoded[6'h19] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_nor = operation_code_decoded[6'h00] & function_code_decoded[6'h27] & shift_amount_decoded[5'h00];
   assign instruction_or = operation_code_decoded[6'h00] & function_code_decoded[6'h25] & shift_amount_decoded[5'h00];
   assign instruction_ori = operation_code_decoded[6'h0d];
@@ -222,6 +250,12 @@ module id_stage (
   assign source2_is_immediate = instruction_addi | instruction_addiu | instruction_andi | instruction_lui | instruction_lw | instruction_ori | instruction_slti | instruction_sltiu | instruction_sw | instruction_xori;
   assign source2_is_unsigned = instruction_andi | instruction_ori | instruction_xori;
   assign source2_is_8 = instruction_jal;
+  assign multiply_valid = instruction_mult | instruction_multu;
+  assign divide_valid = instruction_div | instruction_divu;
+  assign multiply_divide_signed = instruction_mult | instruction_div;
+  assign result_high = instruction_mfhi | instruction_mthi;
+  assign result_low = instruction_mflo | instruction_mtlo;
+  assign high_low_write = instruction_mthi | instruction_mtlo;
   assign result_from_memory = instruction_lw;
   assign destination_is_register31 = instruction_jal;
   assign detination_is_multi_use = instruction_addi | instruction_addiu | instruction_andi | instruction_lui | instruction_lw | instruction_ori | instruction_slti | instruction_sltiu | instruction_xori;

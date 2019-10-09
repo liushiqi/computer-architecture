@@ -9,6 +9,8 @@ module mul_testbench;
   reg [31:0] input2;
   // outputs
   wire signed [63:0] result;
+  
+  wire ok;
 
   // Instantiate the Unit Under Test
   multiplier multiplier (
@@ -47,10 +49,10 @@ module mul_testbench;
   reg [31:0] count;
 
   always @(posedge clock) begin
-    if (!reset) begin
-      input1_ref <= 32'd0;
-      input2_ref <= 32'd0;
-      is_signed_ref <= 1'b0;
+    if (reset) begin
+      input1_ref <= input1;
+      input2_ref <= input2;
+      is_signed_ref <= is_signed;
       count <= 32'b0;
     end else begin
       input1_ref <= input1;
@@ -71,14 +73,19 @@ module mul_testbench;
 
   // 打印运算结果
   initial begin
-    $monitor("input1 = %d, input2 = %d, signed = %d, result = %d, ok = %b", input1_extended, input2_extended, is_signed_ref, result, ok);
+    $monitor("input1 = %x, input2 = %x, signed = %x, result = %x, ok = %x", input1_ref, input2_ref, is_signed_ref, result, ok);
   end
 
   // 判断结果是否正确
   always @(posedge clock) begin
-    if (!ok) begin
-      $display("Error : input1 = %d, input2 = %d, result = %d, result_ref = %d, ok = %b",input1_extended, input2_extended, result, result_ref, ok);
+    if (!reset && ok !== 1) begin
+      $display("Error : input1 = %x, input2 = %x, signed = %x result = %x, result_ref = %x, ok = %x", input1_ref, input2_ref, is_signed_ref, result, result_ref, ok);
       $finish;
     end
+  end
+
+  initial begin
+    #100000 $display("Test passed!");
+    $finish;
   end
 endmodule

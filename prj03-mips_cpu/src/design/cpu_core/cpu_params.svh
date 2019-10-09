@@ -42,6 +42,12 @@ package id_stage_params;
     logic source1_is_program_count;
     logic source1_is_shift_amount;
     logic is_load_operation;
+    logic multiply_valid;
+    logic divide_valid;
+    logic multiply_divide_signed;
+    logic result_high;
+    logic result_low;
+    logic high_low_write;
     logic [11:0] alu_operation;
   } IDToEXDecodeBusData;
 
@@ -50,6 +56,32 @@ package id_stage_params;
     CpuData target;
   } IDToIFBranchBusData ;
 endpackage : id_stage_params
+
+package multiplier_params;
+  import cpu_core_params::*;
+  export cpu_core_params::CpuData;
+  export cpu_core_params::CPU_DATA_WIDTH;
+
+  typedef logic [CPU_DATA_WIDTH * 2 - 1:0] MultiplyResultData;
+
+  typedef struct {
+     logic [CPU_DATA_WIDTH / 2:0] wallace_input [CPU_DATA_WIDTH * 2];
+     logic [CPU_DATA_WIDTH / 2:0] carry_input;
+  } Stage1ToStage2BusData;
+endpackage : multiplier_params
+
+package divider_params;
+  import cpu_core_params::*;
+  export cpu_core_params::CpuData;
+  export cpu_core_params::CPU_DATA_WIDTH;
+  
+  typedef enum bit [1:0] {
+    WAITING_STATE = 2'b00,
+    LOAD_STATE = 2'b01,
+    DIVIDE_STATE = 2'b10,
+    RETURN_STATE = 2'b11
+  } State;
+endpackage: divider_params
 
 package ex_stage_params;
   import cpu_core_params::*;
@@ -65,15 +97,27 @@ package ex_stage_params;
     logic valid;
     ProgramCount program_count;
     CpuData alu_result;
+    CpuData source_register_data;
     logic [4:0] destination_register;
     logic register_write;
     logic result_is_from_memory;
+    logic multiply_valid;
+    multiplier_params::MultiplyResultData multiply_result;
+    logic divide_valid;
+    logic divide_result_valid;
+    CpuData divide_result;
+    CpuData divide_remain;
+    logic result_high;
+    logic result_low;
+    logic high_low_write;
   } EXToIOData;
 endpackage : ex_stage_params
 
 package io_stage_params;
   import cpu_core_params::*;
+  export cpu_core_params::CpuData;
   export cpu_core_params::ProgramCount;
+  export cpu_core_params::CPU_DATA_WIDTH;
 
   typedef struct packed {
     logic valid;
@@ -110,19 +154,5 @@ package wb_stage_params;
     CpuData write_data;
   } WBToRegisterFileData;
 endpackage : wb_stage_params
-
-package multiplier_params;
-  import cpu_core_params::*;
-  export cpu_core_params::CpuData;
-  export cpu_core_params::CPU_DATA_WIDTH;
-
-  typedef logic [CPU_DATA_WIDTH * 2 - 1:0] MultiplyResultData;
-
-  typedef struct {
-     logic valid;
-     logic [CPU_DATA_WIDTH / 2:0] wallace_input [CPU_DATA_WIDTH * 2 + 2];
-     logic [CPU_DATA_WIDTH / 2:0] carry_input;
-  } Stage1ToStage2BusData;
-endpackage : multiplier_params
 
 `endif

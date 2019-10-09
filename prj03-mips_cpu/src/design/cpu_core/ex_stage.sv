@@ -31,6 +31,11 @@ module ex_stage (
   wire [31:0] alu_input2;
   wire [31:0] alu_result;
 
+  multiplier_params::MultiplyResultData multiply_result;
+  wire divide_result_valid;
+  CpuData divide_result;
+  CpuData divide_remain;
+
   wire result_is_from_memory;
 
   assign result_is_from_memory = from_id_data.is_load_operation;
@@ -38,9 +43,19 @@ module ex_stage (
     valid: ex_to_io_valid,
     program_count: ex_program_count,
     alu_result: alu_result,
+    source_register_data: from_id_data.source_register_value,
     destination_register: from_id_data.destination_register,
     register_write: from_id_data.register_write,
-    result_is_from_memory: result_is_from_memory
+    result_is_from_memory: result_is_from_memory,
+    multiply_valid: from_id_data.multiply_valid,
+    multiply_result: multiply_result,
+    divide_valid: from_id_data.divide_valid,
+    divide_result_valid: divide_result_valid,
+    divide_result: divide_result,
+    divide_remain: divide_remain,
+    result_high: from_id_data.result_high,
+    result_low: from_id_data.result_low,
+    high_low_write: from_id_data.high_low_write
   };
 
   wire [4:0] backpass_address;
@@ -85,4 +100,25 @@ module ex_stage (
   assign data_write_enabled = from_id_data.memory_write && ex_valid ? 4'hf : 4'h0;
   assign data_address = alu_result;
   assign data_write_data = from_id_data.multi_use_register_value;
+
+  multiplier multiplier (
+    .clock,
+    .reset,
+    .input1(alu_input1),
+    .input2(alu_input2),
+    .is_signed(from_id_data.multiply_divide_signed),
+    .result(multiply_result)
+  );
+
+  divider divider (
+    .clock(clock),
+    .reset(reset),
+    .divide_request_valid(from_id_data.divide_valid),
+    .is_signed_input(from_id_data.multiply_divide_signed),
+    .input1(alu_input1),
+    .input2(alu_input2),
+    .divide_result_valid(divide_result_valid),
+    .divide_result(divide_result),
+    .divide_remain(divide_remain)
+  );
 endmodule : ex_stage
