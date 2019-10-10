@@ -26,6 +26,7 @@ package id_stage_params;
   import cpu_core_params::*;
   export cpu_core_params::CpuData;
   export cpu_core_params::ProgramCount;
+  export cpu_core_params::CPU_DATA_WIDTH;
 
   typedef struct packed {
     logic valid;

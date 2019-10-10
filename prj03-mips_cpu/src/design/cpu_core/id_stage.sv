@@ -79,10 +79,18 @@ module id_stage (
   wire instruction_and;
   wire instruction_andi;
   wire instruction_beq;
+  wire instruction_bgez;
+  wire instruction_bgezal;
+  wire instruction_bgtz;
+  wire instruction_blez;
+  wire instruction_bltz;
+  wire instruction_bltzal;
   wire instruction_bne;
   wire instruction_div;
   wire instruction_divu;
+  wire instruction_j;
   wire instruction_jal;
+  wire instruction_jalr;
   wire instruction_jr;
   wire instruction_lui;
   wire instruction_lw;
@@ -120,6 +128,8 @@ module id_stage (
   wire [31:0] register_file_read_data_2;
 
   wire source_registers_are_equal;
+  wire source_register_is_negative;
+  wire source_register_is_positive;
 
   assign id_to_if_branch_bus = '{
     taken: branch_taken,
@@ -200,10 +210,18 @@ module id_stage (
   assign instruction_and = operation_code_decoded[6'h00] & function_code_decoded[6'h24] & shift_amount_decoded[5'h00];
   assign instruction_andi = operation_code_decoded[6'h0c];
   assign instruction_beq = operation_code_decoded[6'h04];
+  assign instruction_bgez = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h01];
+  assign instruction_bgezal = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h21];
+  assign instruction_bgtz = operation_code_decoded[6'h07] & multi_use_register_decoded[6'h00];
+  assign instruction_blez = operation_code_decoded[6'h06] & multi_use_register_decoded[6'h00];
+  assign instruction_bltz = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h00];
+  assign instruction_bltzal = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h22];
   assign instruction_bne = operation_code_decoded[6'h05];
   assign instruction_div = operation_code_decoded[6'h00] & function_code_decoded[6'h1a] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_divu = operation_code_decoded[6'h00] & function_code_decoded[6'h1b] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_j = operation_code_decoded[6'h02];
   assign instruction_jal = operation_code_decoded[6'h03];
+  assign instruction_jalr = operation_code_decoded[6'h00] & function_code_decoded[6'h09] & multi_use_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_jr = operation_code_decoded[6'h00] & function_code_decoded[6'h08] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_lui = operation_code_decoded[6'h0f] & source_register_decoded[5'h00];
   assign instruction_lw = operation_code_decoded[6'h23];
@@ -232,7 +250,7 @@ module id_stage (
   assign instruction_xor = operation_code_decoded[6'h00] & function_code_decoded[6'h26] & shift_amount_decoded[5'h00];
   assign instruction_xori = operation_code_decoded[6'h0e];
 
-  assign alu_operation[0] = instruction_add | instruction_addi | instruction_addiu | instruction_addu | instruction_jal | instruction_lw | instruction_sw;
+  assign alu_operation[0] = instruction_add | instruction_addi | instruction_addiu | instruction_addu | instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr | instruction_lw | instruction_sw;
   assign alu_operation[1] = instruction_sub | instruction_subu;
   assign alu_operation[2] = instruction_slt | instruction_slti;
   assign alu_operation[3] = instruction_sltiu | instruction_sltu;
@@ -246,10 +264,10 @@ module id_stage (
   assign alu_operation[11] = instruction_lui;
 
   assign source1_is_shift_amount = instruction_sll | instruction_srl | instruction_sra;
-  assign source1_is_program_count = instruction_jal;
+  assign source1_is_program_count = instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr;
   assign source2_is_immediate = instruction_addi | instruction_addiu | instruction_andi | instruction_lui | instruction_lw | instruction_ori | instruction_slti | instruction_sltiu | instruction_sw | instruction_xori;
   assign source2_is_unsigned = instruction_andi | instruction_ori | instruction_xori;
-  assign source2_is_8 = instruction_jal;
+  assign source2_is_8 = instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr;
   assign multiply_valid = instruction_mult | instruction_multu;
   assign divide_valid = instruction_div | instruction_divu;
   assign multiply_divide_signed = instruction_mult | instruction_div;
@@ -257,12 +275,12 @@ module id_stage (
   assign result_low = instruction_mflo | instruction_mtlo;
   assign high_low_write = instruction_mthi | instruction_mtlo;
   assign result_from_memory = instruction_lw;
-  assign destination_is_register31 = instruction_jal;
+  assign destination_is_register31 = instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr;
   assign detination_is_multi_use = instruction_addi | instruction_addiu | instruction_andi | instruction_lui | instruction_lw | instruction_ori | instruction_slti | instruction_sltiu | instruction_xori;
-  assign register_write = ~instruction_beq & ~instruction_bne & ~instruction_jr & ~instruction_sw;
+  assign register_write = ~instruction_beq & ~instruction_bgez & ~instruction_bgtz & ~instruction_blez & ~instruction_bltz & ~instruction_bne & ~instruction_div & ~instruction_divu & ~instruction_j & ~instruction_jr & ~instruction_mthi & ~instruction_mtlo & ~instruction_mult & ~instruction_multu & ~instruction_sw;
   assign memory_write = instruction_sw;
   assign is_load_operation = instruction_lw;
-  assign multi_use_register_is_used = ~instruction_addi & ~instruction_addiu & ~instruction_andi & ~instruction_jal & ~instruction_jr & ~instruction_lui & ~instruction_lw & ~instruction_ori & ~instruction_slti & ~instruction_sltiu & ~instruction_xori;
+  assign multi_use_register_is_used = instruction_add | instruction_addu | instruction_and | instruction_beq | instruction_bne | instruction_div | instruction_divu | instruction_mult | instruction_multu | instruction_nor | instruction_or | instruction_sll | instruction_sllv | instruction_slt | instruction_sltu | instruction_sra | instruction_srav | instruction_srl | instruction_srlv | instruction_sub | instruction_subu | instruction_sw;
 
   assign write_register = destination_is_register31 ? 5'd31 : detination_is_multi_use ? multi_use_register : destination_register;
 
@@ -289,11 +307,18 @@ module id_stage (
     (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_register == multi_use_register) ? wb_to_id_back_pass_bus.write_data : register_file_read_data_2;
 
   assign source_registers_are_equal = (source_register_value == multi_use_register_value);
+  assign source_register_is_negative = (source_register_value[CPU_DATA_WIDTH - 1] == 1'b1);
+  assign source_register_is_positive = (source_register_is_negative && (source_register_value != 32'b0));
   assign branch_taken =
     ((instruction_beq && source_registers_are_equal) ||
+      ((instruction_bgez || instruction_bgezal) && ~source_register_is_negative) ||
+      (instruction_bgtz && source_register_is_positive) ||
+      (instruction_blez && ~source_register_is_positive) ||
+      ((instruction_bltz || instruction_bltzal) && source_register_is_negative) ||
       (instruction_bne && !source_registers_are_equal) ||
-      instruction_jal || instruction_jr) && id_valid;
+      instruction_j || instruction_jal || instruction_jalr || instruction_jr) && id_valid;
   assign branch_target =
-    (instruction_beq || instruction_bne) ? (if_to_id_instruction_bus.program_count + {{14{immediate[15]}}, immediate[15:0], 2'b0}) :
-    (instruction_jr) ? source_register_value : {if_to_id_instruction_bus.program_count[31:28], jump_address[25:0], 2'b0};
+    (instruction_beq || instruction_bgez || instruction_bgezal || instruction_bgtz || instruction_blez || instruction_bltz || instruction_bltzal || instruction_bne) ?
+      (if_to_id_instruction_bus.program_count + {{14{immediate[15]}}, immediate[15:0], 2'b0}) :
+    (instruction_jalr || instruction_jr) ? source_register_value : {if_to_id_instruction_bus.program_count[31:28], jump_address[25:0], 2'b0};
 endmodule : id_stage
