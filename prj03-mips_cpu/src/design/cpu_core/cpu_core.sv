@@ -38,7 +38,7 @@ module cpu_core (
   wb_stage_params::WBToRegisterFileData wb_to_register_file_bus;
   wb_stage_params::WBToIDBackPassData wb_to_id_back_pass_bus;
 
-// instruction fetch stage
+  // instruction fetch stage
   if_stage if_stage(
     .clock,
     .reset,
@@ -56,7 +56,7 @@ module cpu_core (
     .instruction_read_data
   );
 
-// instruction decode stage
+  // instruction decode stage
   id_stage id_stage(
     .clock,
     .reset,
@@ -77,7 +77,7 @@ module cpu_core (
     .wb_to_register_file_bus
   );
 
-// execute stage
+  // execute stage
   ex_stage ex_stage(
     .clock,
     .reset,
@@ -97,7 +97,7 @@ module cpu_core (
     .data_write_data
   );
 
-// io stage
+  // io stage
   io_state io_stage(
     .clock,
     .reset,
@@ -114,7 +114,7 @@ module cpu_core (
     .data_read_data
   );
 
-// write back stage
+  // write back stage
   wb_stage wb_stage(
     .clock,
     .reset,

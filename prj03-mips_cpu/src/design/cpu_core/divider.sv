@@ -5,7 +5,7 @@ module divider (
   input is_signed_input,
   input cpu_core_params::CpuData input1,
   input cpu_core_params::CpuData input2,
-  output reg divide_result_valid,
+  output divide_result_valid,
   output cpu_core_params::CpuData divide_result,
   output cpu_core_params::CpuData divide_remain
 );
