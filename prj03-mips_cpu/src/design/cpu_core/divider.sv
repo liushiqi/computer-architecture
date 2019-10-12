@@ -9,7 +9,7 @@ module divider (
   output cpu_core_params::CpuData divide_result,
   output cpu_core_params::CpuData divide_remain
 );
-  import divider_params::*; 
+  import divider_params::*;
   reg [CPU_DATA_WIDTH:0] remain;
   reg [CPU_DATA_WIDTH - 1:0] result;
   wire [CPU_DATA_WIDTH:0] not_positive_divisor, not_positive_neg_divisor;

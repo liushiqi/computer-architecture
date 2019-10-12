@@ -92,8 +92,14 @@ module id_stage (
   wire instruction_jal;
   wire instruction_jalr;
   wire instruction_jr;
+  wire instruction_lb;
+  wire instruction_lbu;
+  wire instruction_lh;
+  wire instruction_lhu;
   wire instruction_lui;
   wire instruction_lw;
+  wire instruction_lwl;
+  wire instruction_lwr;
   wire instruction_mfhi;
   wire instruction_mflo;
   wire instruction_mthi;
@@ -103,6 +109,8 @@ module id_stage (
   wire instruction_nor;
   wire instruction_or;
   wire instruction_ori;
+  wire instruction_sb;
+  wire instruction_sh;
   wire instruction_sll;
   wire instruction_sllv;
   wire instruction_slt;
@@ -116,6 +124,8 @@ module id_stage (
   wire instruction_sub;
   wire instruction_subu;
   wire instruction_sw;
+  wire instruction_swl;
+  wire instruction_swr;
   wire instruction_xor;
   wire instruction_xori;
 
@@ -223,8 +233,14 @@ module id_stage (
   assign instruction_jal = operation_code_decoded[6'h03];
   assign instruction_jalr = operation_code_decoded[6'h00] & function_code_decoded[6'h09] & multi_use_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_jr = operation_code_decoded[6'h00] & function_code_decoded[6'h08] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_lb = operation_code_decoded[6'h20];
+  assign instruction_lbu = operation_code_decoded[6'h24];
+  assign instruction_lh = operation_code_decoded[6'h21];
+  assign instruction_lhu = operation_code_decoded[6'h25];
   assign instruction_lui = operation_code_decoded[6'h0f] & source_register_decoded[5'h00];
   assign instruction_lw = operation_code_decoded[6'h23];
+  assign instruction_lwl = operation_code_decoded[6'h22];
+  assign instruction_lwr = operation_code_decoded[6'h26];
   assign instruction_mfhi = operation_code_decoded[6'h00] & function_code_decoded[6'h10] & source_register_decoded[5'h00] & multi_use_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_mflo = operation_code_decoded[6'h00] & function_code_decoded[6'h12] & source_register_decoded[5'h00] & multi_use_register_decoded[5'h00] &  shift_amount_decoded[5'h00];
   assign instruction_mthi = operation_code_decoded[6'h00] & function_code_decoded[6'h11] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
@@ -234,6 +250,8 @@ module id_stage (
   assign instruction_nor = operation_code_decoded[6'h00] & function_code_decoded[6'h27] & shift_amount_decoded[5'h00];
   assign instruction_or = operation_code_decoded[6'h00] & function_code_decoded[6'h25] & shift_amount_decoded[5'h00];
   assign instruction_ori = operation_code_decoded[6'h0d];
+  assign instruction_sb = operation_code_decoded[6'h28];
+  assign instruction_sh = operation_code_decoded[6'h29];
   assign instruction_sll = operation_code_decoded[6'h00] & function_code_decoded[6'h00] & source_register_decoded[5'h00];
   assign instruction_sllv = operation_code_decoded[6'h00] & function_code_decoded[6'h04] & shift_amount_decoded[5'h00];
   assign instruction_slt = operation_code_decoded[6'h00] & function_code_decoded[6'h2a] & shift_amount_decoded[5'h00];
@@ -247,10 +265,12 @@ module id_stage (
   assign instruction_sub = operation_code_decoded[6'h00] & function_code_decoded[6'h22] & shift_amount_decoded[5'h00];
   assign instruction_subu = operation_code_decoded[6'h00] & function_code_decoded[6'h23] & shift_amount_decoded[5'h00];
   assign instruction_sw = operation_code_decoded[6'h2b];
+  assign instruction_swl = operation_code_decoded[6'h2a];
+  assign instruction_swr = operation_code_decoded[6'h2e];
   assign instruction_xor = operation_code_decoded[6'h00] & function_code_decoded[6'h26] & shift_amount_decoded[5'h00];
   assign instruction_xori = operation_code_decoded[6'h0e];
 
-  assign alu_operation[0] = instruction_add | instruction_addi | instruction_addiu | instruction_addu | instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr | instruction_lw | instruction_sw;
+  assign alu_operation[0] = instruction_add | instruction_addi | instruction_addiu | instruction_addu | instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr | instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lw | instruction_lwl | instruction_lwr | instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
   assign alu_operation[1] = instruction_sub | instruction_subu;
   assign alu_operation[2] = instruction_slt | instruction_slti;
   assign alu_operation[3] = instruction_sltiu | instruction_sltu;
@@ -265,7 +285,7 @@ module id_stage (
 
   assign source1_is_shift_amount = instruction_sll | instruction_srl | instruction_sra;
   assign source1_is_program_count = instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr;
-  assign source2_is_immediate = instruction_addi | instruction_addiu | instruction_andi | instruction_lui | instruction_lw | instruction_ori | instruction_slti | instruction_sltiu | instruction_sw | instruction_xori;
+  assign source2_is_immediate = instruction_addi | instruction_addiu | instruction_andi | instruction_lui | instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lw | instruction_lwl | instruction_lwr | instruction_ori | instruction_slti | instruction_sltiu | instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr | instruction_xori;
   assign source2_is_unsigned = instruction_andi | instruction_ori | instruction_xori;
   assign source2_is_8 = instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr;
   assign multiply_valid = instruction_mult | instruction_multu;
@@ -274,13 +294,13 @@ module id_stage (
   assign result_high = instruction_mfhi | instruction_mthi;
   assign result_low = instruction_mflo | instruction_mtlo;
   assign high_low_write = instruction_mthi | instruction_mtlo;
-  assign result_from_memory = instruction_lw;
+  assign result_from_memory = instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lw | instruction_lwl | instruction_lwr;
   assign destination_is_register31 = instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr;
   assign detination_is_multi_use = instruction_addi | instruction_addiu | instruction_andi | instruction_lui | instruction_lw | instruction_ori | instruction_slti | instruction_sltiu | instruction_xori;
-  assign register_write = ~instruction_beq & ~instruction_bgez & ~instruction_bgtz & ~instruction_blez & ~instruction_bltz & ~instruction_bne & ~instruction_div & ~instruction_divu & ~instruction_j & ~instruction_jr & ~instruction_mthi & ~instruction_mtlo & ~instruction_mult & ~instruction_multu & ~instruction_sw;
-  assign memory_write = instruction_sw;
-  assign is_load_operation = instruction_lw;
-  assign multi_use_register_is_used = instruction_add | instruction_addu | instruction_and | instruction_beq | instruction_bne | instruction_div | instruction_divu | instruction_mult | instruction_multu | instruction_nor | instruction_or | instruction_sll | instruction_sllv | instruction_slt | instruction_sltu | instruction_sra | instruction_srav | instruction_srl | instruction_srlv | instruction_sub | instruction_subu | instruction_sw;
+  assign register_write = ~instruction_beq & ~instruction_bgez & ~instruction_bgtz & ~instruction_blez & ~instruction_bltz & ~instruction_bne & ~instruction_div & ~instruction_divu & ~instruction_j & ~instruction_jr & ~instruction_mthi & ~instruction_mtlo & ~instruction_mult & ~instruction_multu & ~instruction_sb & ~instruction_sh & ~instruction_sw & ~instruction_swl & ~instruction_swr;
+  assign memory_write = instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
+  assign is_load_operation = instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lw | instruction_lwl | instruction_lwr;
+  assign multi_use_register_is_used = instruction_add | instruction_addu | instruction_and | instruction_beq | instruction_bne | instruction_div | instruction_divu | instruction_mult | instruction_multu | instruction_nor | instruction_or | instruction_sll | instruction_sllv | instruction_slt | instruction_sltu | instruction_sra | instruction_srav | instruction_srl | instruction_srlv | instruction_sub | instruction_subu | instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
 
   assign write_register = destination_is_register31 ? 5'd31 : detination_is_multi_use ? multi_use_register : destination_register;
 
