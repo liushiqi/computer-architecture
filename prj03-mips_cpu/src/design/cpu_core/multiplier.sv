@@ -20,7 +20,7 @@ module multiply_stage1 (
   wire [CPU_DATA_WIDTH:0] input1_result [3];
   wire [CPU_DATA_WIDTH + 2:0] input2_extended;
 
-  assign input1_result[0] = {(CPU_DATA_WIDTH){1'b0}};
+  assign input1_result[0] = {(CPU_DATA_WIDTH + 1){1'b0}};
   assign input1_result[1] = {is_signed & input1[CPU_DATA_WIDTH - 1], input1};
   assign input1_result[2] = {input1, 1'b0};
   assign input2_extended = {{2{is_signed & input2[CPU_DATA_WIDTH - 1]}}, input2, 1'b0};
