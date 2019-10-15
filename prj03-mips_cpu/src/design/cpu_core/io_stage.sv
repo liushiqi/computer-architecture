@@ -38,11 +38,13 @@ module io_state (
     register_file_write_enabled: from_ex_data.register_write
   };
 
+  wire previous_valid;
+  assign previous_valid = from_ex_data.valid & ~from_ex_data.result_is_from_memory & ~(from_ex_data.result_high | from_ex_data.result_low) & from_ex_data.register_write;
   assign io_to_id_back_pass_bus = '{
     valid: from_ex_data.register_write & io_valid,
     write_register: from_ex_data.destination_register,
     write_data: final_result,
-    previous_valid: from_ex_data.valid & ~from_ex_data.result_is_from_memory & from_ex_data.register_write,
+    previous_valid: previous_valid,
     previous_write_register: from_ex_data.destination_register,
     previous_write_data: from_ex_data.alu_result
   };

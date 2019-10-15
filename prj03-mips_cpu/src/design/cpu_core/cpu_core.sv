@@ -39,7 +39,7 @@ module cpu_core (
   wb_stage_params::WBToIDBackPassData wb_to_id_back_pass_bus;
 
   // instruction fetch stage
-  if_stage if_stage(
+  if_stage u_if_stage(
     .clock,
     .reset,
     // id allow in
@@ -57,7 +57,7 @@ module cpu_core (
   );
 
   // instruction decode stage
-  id_stage id_stage(
+  id_stage u_id_stage(
     .clock,
     .reset,
     // allow in
@@ -78,7 +78,7 @@ module cpu_core (
   );
 
   // execute stage
-  ex_stage ex_stage(
+  ex_stage u_ex_stage(
     .clock,
     .reset,
     // allow in
@@ -98,7 +98,7 @@ module cpu_core (
   );
 
   // io stage
-  io_state io_stage(
+  io_state u_io_stage(
     .clock,
     .reset,
     // allow in
@@ -115,7 +115,7 @@ module cpu_core (
   );
 
   // write back stage
-  wb_stage wb_stage(
+  wb_stage u_wb_stage(
     .clock,
     .reset,
     //allowin

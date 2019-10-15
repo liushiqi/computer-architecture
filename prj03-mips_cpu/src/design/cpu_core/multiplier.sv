@@ -118,7 +118,7 @@ module multiply_stage2 (
   assign adder_input2[0] = from_stage1_data.carry_input[1];
   generate
     for (genvar i = 0; i < CPU_DATA_WIDTH * 2; i++) begin
-      wallace_adder adder(
+      wallace_adder u_adder(
         .added_values(from_stage1_data.wallace_input[i]),
         .carry_in(carry_values[i]),
         .result(adder_input1[i]),
@@ -143,7 +143,7 @@ module multiplier (
 );
   multiplier_params::Stage1ToStage2BusData stage1_to_stage2_bus;
 
-  multiply_stage1 stage1(
+  multiply_stage1 u_stage1(
     .clock,
     .reset,
     .input1,
@@ -152,7 +152,7 @@ module multiplier (
     .stage1_to_stage2_bus
   );
 
-  multiply_stage2 stage2(
+  multiply_stage2 u_stage2(
     .clock,
     .reset,
     .stage1_to_stage2_bus,

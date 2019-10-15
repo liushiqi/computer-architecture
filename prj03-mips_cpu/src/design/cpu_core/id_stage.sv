@@ -49,9 +49,10 @@ module id_stage (
   wire result_high;
   wire result_low;
   wire high_low_write;
-  wire result_from_memory;
   wire register_write;
   wire memory_write;
+  wire [4:0] memory_io_type;
+  wire memory_io_unsigned;
   wire [4:0] write_register;
   wire [15:0] immediate;
   wire [31:0] source_register_value;
@@ -154,6 +155,8 @@ module id_stage (
     immediate: immediate,
     destination_register: write_register,
     memory_write: memory_write,
+    memory_io_type: memory_io_type,
+    memory_io_unsigned: memory_io_unsigned,
     register_write: register_write,
     source2_is_8: source2_is_8,
     source2_is_immediate: source2_is_immediate,
@@ -221,11 +224,11 @@ module id_stage (
   assign instruction_andi = operation_code_decoded[6'h0c];
   assign instruction_beq = operation_code_decoded[6'h04];
   assign instruction_bgez = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h01];
-  assign instruction_bgezal = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h21];
+  assign instruction_bgezal = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h11];
   assign instruction_bgtz = operation_code_decoded[6'h07] & multi_use_register_decoded[6'h00];
   assign instruction_blez = operation_code_decoded[6'h06] & multi_use_register_decoded[6'h00];
   assign instruction_bltz = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h00];
-  assign instruction_bltzal = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h22];
+  assign instruction_bltzal = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h10];
   assign instruction_bne = operation_code_decoded[6'h05];
   assign instruction_div = operation_code_decoded[6'h00] & function_code_decoded[6'h1a] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_divu = operation_code_decoded[6'h00] & function_code_decoded[6'h1b] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
@@ -294,13 +297,18 @@ module id_stage (
   assign result_high = instruction_mfhi | instruction_mthi;
   assign result_low = instruction_mflo | instruction_mtlo;
   assign high_low_write = instruction_mthi | instruction_mtlo;
-  assign result_from_memory = instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lw | instruction_lwl | instruction_lwr;
   assign destination_is_register31 = instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr;
   assign detination_is_multi_use = instruction_addi | instruction_addiu | instruction_andi | instruction_lui | instruction_lw | instruction_ori | instruction_slti | instruction_sltiu | instruction_xori;
   assign register_write = ~instruction_beq & ~instruction_bgez & ~instruction_bgtz & ~instruction_blez & ~instruction_bltz & ~instruction_bne & ~instruction_div & ~instruction_divu & ~instruction_j & ~instruction_jr & ~instruction_mthi & ~instruction_mtlo & ~instruction_mult & ~instruction_multu & ~instruction_sb & ~instruction_sh & ~instruction_sw & ~instruction_swl & ~instruction_swr;
   assign memory_write = instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
+  assign memory_io_unsigned = instruction_lbu | instruction_lhu;
   assign is_load_operation = instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lw | instruction_lwl | instruction_lwr;
   assign multi_use_register_is_used = instruction_add | instruction_addu | instruction_and | instruction_beq | instruction_bne | instruction_div | instruction_divu | instruction_mult | instruction_multu | instruction_nor | instruction_or | instruction_sll | instruction_sllv | instruction_slt | instruction_sltu | instruction_sra | instruction_srav | instruction_srl | instruction_srlv | instruction_sub | instruction_subu | instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
+  assign memory_io_type[4] = instruction_lw | instruction_sw;
+  assign memory_io_type[3] = instruction_lwl | instruction_swl;
+  assign memory_io_type[2] = instruction_lh | instruction_lhu | instruction_sh;
+  assign memory_io_type[1] = instruction_lwr | instruction_swr;
+  assign memory_io_type[0] = instruction_lb | instruction_lbu | instruction_sb;
 
   assign write_register = destination_is_register31 ? 5'd31 : detination_is_multi_use ? multi_use_register : destination_register;
 
@@ -328,7 +336,7 @@ module id_stage (
 
   assign source_registers_are_equal = (source_register_value == multi_use_register_value);
   assign source_register_is_negative = (source_register_value[CPU_DATA_WIDTH - 1] == 1'b1);
-  assign source_register_is_positive = (source_register_is_negative && (source_register_value != 32'b0));
+  assign source_register_is_positive = (~source_register_is_negative && (source_register_value != 32'b0));
   assign branch_taken =
     ((instruction_beq && source_registers_are_equal) ||
       ((instruction_bgez || instruction_bgezal) && ~source_register_is_negative) ||
