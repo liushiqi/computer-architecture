@@ -58,7 +58,6 @@ module wallace_adder (
   output [13:0] carry_out
 );
   wire [11:0] second_step_input;
-
   assign {carry_out[0], second_step_input[0]} = added_values[16] + added_values[15] + added_values[14];
   assign {carry_out[1], second_step_input[1]} = added_values[13] + added_values[12] + added_values[11];
   assign {carry_out[2], second_step_input[2]} = added_values[10] + added_values[9] + added_values[8];
