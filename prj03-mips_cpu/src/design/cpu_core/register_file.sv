@@ -18,7 +18,7 @@ module register_file (
       assign read_data[i] = data[i];
   endgenerate
 
-// write
+  // write
   always_ff @(posedge clock) begin : writing
     if (write_enabled && (write_address != 4'b0)) begin
       data[write_address][7:0] <= write_strobe[0] ? write_data[7:0] : data[write_address][7:0];
@@ -28,7 +28,7 @@ module register_file (
     end
   end : writing
 
-// read output
+  // read output
   assign read_data_1 = read_data[read_address_1];
   assign read_data_2 = read_data[read_address_2];
 endmodule : register_file

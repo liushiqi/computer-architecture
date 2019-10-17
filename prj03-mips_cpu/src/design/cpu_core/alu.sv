@@ -17,7 +17,7 @@ module alu(
   wire operation_sra;
   wire operation_lui;
 
-// control code decomposition
+  // control code decomposition
   assign operation_add = alu_operation[0];
   assign operation_sub = alu_operation[1];
   assign operation_slt = alu_operation[2];
@@ -44,7 +44,7 @@ module alu(
   wire [31:0] sr_result;
 
 
-// 32-bit adder
+  // 32-bit adder
   wire [31:0] adder_input_1;
   wire [31:0] adder_input_2;
   wire adder_carry_in;
@@ -56,34 +56,34 @@ module alu(
   assign adder_carry_in = (operation_sub | operation_slt | operation_sltu) ? 1'b1:1'b0;
   assign {adder_carry_out, adder_result} = adder_input_1+adder_input_2+adder_carry_in;
 
-// add, sub result
+  // add, sub result
   assign add_sub_result = adder_result;
 
-// slt result
+  // slt result
   assign slt_result[31:1] = 31'b0;
   assign slt_result[0] = (alu_input_1[31] & ~alu_input_2[31])
     | ((alu_input_1[31] ~^ alu_input_2[31]) & adder_result[31]);
 
-// sltu result
+  // sltu result
   assign sltu_result[31:1] = 31'b0;
   assign sltu_result[0] = ~adder_carry_out;
 
-// bitwise operation
+  // bitwise operation
   assign and_result = alu_input_1 & alu_input_2;
   assign or_result = alu_input_1 | alu_input_2;
   assign nor_result = ~or_result;
   assign xor_result = alu_input_1 ^ alu_input_2;
   assign lui_result = {alu_input_2[15:0], 16'b0};
 
-// sll result
+  // sll result
   assign sll_result = alu_input_2 << alu_input_1[4:0];
 
-// srl, sra result
+  // srl, sra result
   assign sr64_result = {{32{operation_sra & alu_input_2[31]}}, alu_input_2[31:0]} >> alu_input_1[4:0];
 
   assign sr_result = sr64_result[32:0];
 
-// final result mux
+  // final result mux
   assign alu_output = ({32{operation_add | operation_sub}} & add_sub_result)
     | ({32{operation_slt}} & slt_result)
     | ({32{operation_sltu}} & sltu_result)
