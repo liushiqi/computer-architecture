@@ -99,13 +99,6 @@ assign debug_wb_rf_wen   = soc_lite.debug_wb_rf_wen;
 assign debug_wb_rf_wnum  = soc_lite.debug_wb_rf_wnum;
 assign debug_wb_rf_wdata = soc_lite.debug_wb_rf_wdata;
 
-//wdata[i*8+7 : i*8] is valid, only wehile wen[i] is valid
-wire [31:0] debug_wb_rf_wdata_v;
-assign debug_wb_rf_wdata_v[31:24] = debug_wb_rf_wdata[31:24] & {8{debug_wb_rf_wen[3]}};
-assign debug_wb_rf_wdata_v[23:16] = debug_wb_rf_wdata[23:16] & {8{debug_wb_rf_wen[2]}};
-assign debug_wb_rf_wdata_v[15: 8] = debug_wb_rf_wdata[15: 8] & {8{debug_wb_rf_wen[1]}};
-assign debug_wb_rf_wdata_v[7 : 0] = debug_wb_rf_wdata[7 : 0] & {8{debug_wb_rf_wen[0]}};
-
 // open the trace file;
 integer trace_ref;
 initial begin
@@ -118,7 +111,7 @@ reg        debug_end;
 
 reg [31:0] ref_wb_pc;
 reg [4 :0] ref_wb_rf_wnum;
-reg [31:0] ref_wb_rf_wdata_v;
+reg [31:0] ref_wb_rf_wdata;
 
 always @(posedge soc_clk)
 begin 
@@ -129,10 +122,23 @@ begin
         while (!trace_cmp_flag && !($feof(trace_ref)))
         begin
             $fscanf(trace_ref, "%h %h %h %h", trace_cmp_flag,
-                    ref_wb_pc, ref_wb_rf_wnum, ref_wb_rf_wdata_v);
+                    ref_wb_pc, ref_wb_rf_wnum, ref_wb_rf_wdata);
         end
     end
 end
+
+//wdata[i*8+7 : i*8] is valid, only wehile wen[i] is valid
+wire [31:0] debug_wb_rf_wdata_v;
+wire [31:0] ref_wb_rf_wdata_v;
+assign debug_wb_rf_wdata_v[31:24] = debug_wb_rf_wdata[31:24] & {8{debug_wb_rf_wen[3]}};
+assign debug_wb_rf_wdata_v[23:16] = debug_wb_rf_wdata[23:16] & {8{debug_wb_rf_wen[2]}};
+assign debug_wb_rf_wdata_v[15: 8] = debug_wb_rf_wdata[15: 8] & {8{debug_wb_rf_wen[1]}};
+assign debug_wb_rf_wdata_v[7 : 0] = debug_wb_rf_wdata[7 : 0] & {8{debug_wb_rf_wen[0]}};
+assign   ref_wb_rf_wdata_v[31:24] =   ref_wb_rf_wdata[31:24] & {8{debug_wb_rf_wen[3]}};
+assign   ref_wb_rf_wdata_v[23:16] =   ref_wb_rf_wdata[23:16] & {8{debug_wb_rf_wen[2]}};
+assign   ref_wb_rf_wdata_v[15: 8] =   ref_wb_rf_wdata[15: 8] & {8{debug_wb_rf_wen[1]}};
+assign   ref_wb_rf_wdata_v[7 : 0] =   ref_wb_rf_wdata[7 : 0] & {8{debug_wb_rf_wen[0]}};
+
 
 //compare result in rsing edge 
 reg debug_wb_err;
@@ -156,7 +162,8 @@ begin
                       debug_wb_pc, debug_wb_rf_wnum, debug_wb_rf_wdata_v);
             $display("--------------------------------------------------------------");
             debug_wb_err <= 1'b1;
-            #40            $finish;
+            #40;
+            $finish;
         end
     end
 end

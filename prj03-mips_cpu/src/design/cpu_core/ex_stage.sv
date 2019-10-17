@@ -46,7 +46,12 @@ module ex_stage (
     source_register_data: from_id_data.source_register_value,
     destination_register: from_id_data.destination_register,
     register_write: from_id_data.register_write,
-    register_write_strobe: data_write_enabled,
+    memory_address_final: alu_result[1:0],
+    is_load_left: from_id_data.memory_io_type[3],
+    is_load_right: from_id_data.memory_io_type[1],
+    is_load_half_word: from_id_data.memory_io_type[2],
+    is_load_byte: from_id_data.memory_io_type[0],
+    memory_io_unsigned: from_id_data.memory_io_unsigned,
     result_is_from_memory: result_is_from_memory,
     multiply_valid: from_id_data.multiply_valid,
     multiply_result: multiply_result,
@@ -63,7 +68,9 @@ module ex_stage (
   assign backpass_address = {5{from_id_data.register_write & ex_valid}} & from_id_data.destination_register;
   assign ex_to_id_back_pass_bus = '{
     valid: from_id_data.register_write & ex_valid,
-    write_register: from_id_data.destination_register
+    data_valid: from_id_data.valid & ~from_id_data.is_load_operation & ~(from_id_data.result_high | from_id_data.result_low) & from_id_data.register_write,
+    write_register: from_id_data.destination_register,
+    write_data: alu_result
   };
 
   assign ex_ready_go = 1'b1;
@@ -101,28 +108,38 @@ module ex_stage (
   assign data_write_enabled = from_id_data.memory_write && ex_valid ? (
     ({4{from_id_data.memory_io_type[4]}} & 4'b1111) |
     ({4{from_id_data.memory_io_type[3]}} & (
-      ({4{alu_result[1:0] == 4'b00}} & 4'b0001) |
-      ({4{alu_result[1:0] == 4'b01}} & 4'b0011) |
-      ({4{alu_result[1:0] == 4'b10}} & 4'b0111) |
-      ({4{alu_result[1:0] == 4'b11}} & 4'b1111))) |
+      ({4{alu_result[1:0] == 2'b00}} & 4'b0001) |
+      ({4{alu_result[1:0] == 2'b01}} & 4'b0011) |
+      ({4{alu_result[1:0] == 2'b10}} & 4'b0111) |
+      ({4{alu_result[1:0] == 2'b11}} & 4'b1111))) |
     ({4{from_id_data.memory_io_type[2]}} & (
-      ({4{alu_result[1:0] == 4'b00}} & 4'b0011) |
-      ({4{alu_result[1:0] == 4'b10}} & 4'b1100))) |
+      ({4{alu_result[1:0] == 2'b00}} & 4'b0011) |
+      ({4{alu_result[1:0] == 2'b10}} & 4'b1100))) |
     ({4{from_id_data.memory_io_type[1]}} & (
-      ({4{alu_result[1:0] == 4'b00}} & 4'b1111) |
-      ({4{alu_result[1:0] == 4'b01}} & 4'b1110) |
-      ({4{alu_result[1:0] == 4'b10}} & 4'b1100) |
-      ({4{alu_result[1:0] == 4'b11}} & 4'b1000))) |
+      ({4{alu_result[1:0] == 2'b00}} & 4'b1111) |
+      ({4{alu_result[1:0] == 2'b01}} & 4'b1110) |
+      ({4{alu_result[1:0] == 2'b10}} & 4'b1100) |
+      ({4{alu_result[1:0] == 2'b11}} & 4'b1000))) |
     ({4{from_id_data.memory_io_type[0]}} & (
-      ({4{alu_result[1:0] == 4'b00}} & 4'b0001) |
-      ({4{alu_result[1:0] == 4'b01}} & 4'b0010) |
-      ({4{alu_result[1:0] == 4'b10}} & 4'b0100) |
-      ({4{alu_result[1:0] == 4'b11}} & 4'b1000)))
+      ({4{alu_result[1:0] == 2'b00}} & 4'b0001) |
+      ({4{alu_result[1:0] == 2'b01}} & 4'b0010) |
+      ({4{alu_result[1:0] == 2'b10}} & 4'b0100) |
+      ({4{alu_result[1:0] == 2'b11}} & 4'b1000)))
   ) : 4'h0;
   assign data_address = {alu_result[31:2], 2'b0};
-  assign data_write_data = (
+  assign data_write_data =
     from_id_data.memory_io_type[0] ? {4{from_id_data.multi_use_register_value[7:0]}} :
-    from_id_data.memory_io_type[2] ? {2{from_id_data.multi_use_register_value[15:0]}} : from_id_data.multi_use_register_value);
+    from_id_data.memory_io_type[2] ? {2{from_id_data.multi_use_register_value[15:0]}} :
+    from_id_data.memory_io_type[1] ? (
+      alu_result[1:0] == 2'b00 ? from_id_data.multi_use_register_value :
+      alu_result[1:0] == 2'b01 ? {from_id_data.multi_use_register_value[23:0], 8'b0} :
+      alu_result[1:0] == 2'b10 ? {from_id_data.multi_use_register_value[15:0], 16'b0} :
+        {from_id_data.multi_use_register_value[7:0], 24'b0}) :
+    from_id_data.memory_io_type[3] ? (
+      alu_result[1:0] == 2'b00 ? {24'b0, from_id_data.multi_use_register_value[31:24]} :
+      alu_result[1:0] == 2'b01 ? {16'b0, from_id_data.multi_use_register_value[31:16]} :
+      alu_result[1:0] == 2'b10 ? {8'b0, from_id_data.multi_use_register_value[31:8]} :
+        from_id_data.multi_use_register_value) : from_id_data.multi_use_register_value;
 
   multiplier u_multiplier (
     .clock,

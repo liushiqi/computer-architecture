@@ -38,6 +38,7 @@ module id_stage (
 
   wire [11:0] alu_operation;
   wire is_load_operation;
+  wire is_jump_operation;
   wire source1_is_shift_amount;
   wire source1_is_program_count;
   wire source2_is_immediate;
@@ -57,6 +58,8 @@ module id_stage (
   wire [15:0] immediate;
   wire [31:0] source_register_value;
   wire [31:0] multi_use_register_value;
+  wire [31:0] source_register_post_value;
+  wire [31:0] multi_use_register_post_value;
   wire multi_use_register_is_used;
 
   wire [5:0] operation_code;
@@ -175,11 +178,12 @@ module id_stage (
 
   wire [4:0] source_register_0_if_unused;
   wire [4:0] multi_use_register_0_if_unused;
-  assign source_register_0_if_unused = source_register & {5{~instruction_lw}};
+  assign source_register_0_if_unused = source_register;
   assign multi_use_register_0_if_unused = multi_use_register & {5{multi_use_register_is_used}};
   wire id_should_be_blocked;
   assign id_should_be_blocked =
     ex_to_id_back_pass_bus.valid &&
+    (!(ex_to_id_back_pass_bus.data_valid) || is_jump_operation) &&
     (ex_to_id_back_pass_bus.write_register != 5'b0) &&
     (ex_to_id_back_pass_bus.write_register == source_register_0_if_unused ||
       ex_to_id_back_pass_bus.write_register == multi_use_register_0_if_unused);
@@ -298,12 +302,14 @@ module id_stage (
   assign result_low = instruction_mflo | instruction_mtlo;
   assign high_low_write = instruction_mthi | instruction_mtlo;
   assign destination_is_register31 = instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr;
-  assign detination_is_multi_use = instruction_addi | instruction_addiu | instruction_andi | instruction_lui | instruction_lw | instruction_ori | instruction_slti | instruction_sltiu | instruction_xori;
+  assign detination_is_multi_use = instruction_addi | instruction_addiu | instruction_andi | instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lui | instruction_lw | | instruction_lwl | instruction_lwr | instruction_ori | instruction_slti | instruction_sltiu | instruction_xori;
   assign register_write = ~instruction_beq & ~instruction_bgez & ~instruction_bgtz & ~instruction_blez & ~instruction_bltz & ~instruction_bne & ~instruction_div & ~instruction_divu & ~instruction_j & ~instruction_jr & ~instruction_mthi & ~instruction_mtlo & ~instruction_mult & ~instruction_multu & ~instruction_sb & ~instruction_sh & ~instruction_sw & ~instruction_swl & ~instruction_swr;
   assign memory_write = instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
   assign memory_io_unsigned = instruction_lbu | instruction_lhu;
   assign is_load_operation = instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lw | instruction_lwl | instruction_lwr;
+  assign is_jump_operation = instruction_beq | instruction_bgez | instruction_bgezal | instruction_bgtz | instruction_blez | instruction_bltz | instruction_bltzal | instruction_bne | instruction_j | instruction_jal | instruction_jalr | instruction_jr;
   assign multi_use_register_is_used = instruction_add | instruction_addu | instruction_and | instruction_beq | instruction_bne | instruction_div | instruction_divu | instruction_mult | instruction_multu | instruction_nor | instruction_or | instruction_sll | instruction_sllv | instruction_slt | instruction_sltu | instruction_sra | instruction_srav | instruction_srl | instruction_srlv | instruction_sub | instruction_subu | instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
+
   assign memory_io_type[4] = instruction_lw | instruction_sw;
   assign memory_io_type[3] = instruction_lwl | instruction_swl;
   assign memory_io_type[2] = instruction_lh | instruction_lhu | instruction_sh;
@@ -321,22 +327,86 @@ module id_stage (
     .read_address_2(register_file_read_address_2),
     .read_data_2(register_file_read_data_2),
     .write_enabled(register_file_write_signals.write_enabled),
+    .write_strobe(register_file_write_signals.write_strobe),
     .write_address(register_file_write_signals.write_address),
     .write_data(register_file_write_signals.write_data)
   );
 
-  assign source_register_value =
-    (io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == source_register) ? io_to_id_back_pass_bus.previous_write_data :
-    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_register == source_register) ? io_to_id_back_pass_bus.write_data :
-    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_register == source_register) ? wb_to_id_back_pass_bus.write_data : register_file_read_data_1;
-  assign multi_use_register_value =
-    (io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == multi_use_register) ? io_to_id_back_pass_bus.previous_write_data :
-    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_register == multi_use_register) ? io_to_id_back_pass_bus.write_data :
-    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_register == multi_use_register) ? wb_to_id_back_pass_bus.write_data : register_file_read_data_2;
+  assign source_register_value[7:0] =
+    (ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == source_register) ? ex_to_id_back_pass_bus.write_data[7:0] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[0] && io_to_id_back_pass_bus.write_register == source_register) ? io_to_id_back_pass_bus.write_data[7:0] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[0] && wb_to_id_back_pass_bus.write_register == source_register) ? wb_to_id_back_pass_bus.write_data[7:0] : register_file_read_data_1[7:0];
+  assign multi_use_register_value[7:0] =
+    (ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == multi_use_register) ? ex_to_id_back_pass_bus.write_data[7:0] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[0] && io_to_id_back_pass_bus.write_register == multi_use_register) ? io_to_id_back_pass_bus.write_data[7:0] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[0] && wb_to_id_back_pass_bus.write_register == multi_use_register) ? wb_to_id_back_pass_bus.write_data[7:0] : register_file_read_data_2[7:0];
 
-  assign source_registers_are_equal = (source_register_value == multi_use_register_value);
-  assign source_register_is_negative = (source_register_value[CPU_DATA_WIDTH - 1] == 1'b1);
-  assign source_register_is_positive = (~source_register_is_negative && (source_register_value != 32'b0));
+  assign source_register_value[15:8] =
+    (ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == source_register) ? ex_to_id_back_pass_bus.write_data[15:8] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[1] && io_to_id_back_pass_bus.write_register == source_register) ? io_to_id_back_pass_bus.write_data[15:8] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[1] && wb_to_id_back_pass_bus.write_register == source_register) ? wb_to_id_back_pass_bus.write_data[15:8] : register_file_read_data_1[15:8];
+  assign multi_use_register_value[15:8] =
+    (ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == multi_use_register) ? ex_to_id_back_pass_bus.write_data[15:8] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[1] && io_to_id_back_pass_bus.write_register == multi_use_register) ? io_to_id_back_pass_bus.write_data[15:8] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[1] && wb_to_id_back_pass_bus.write_register == multi_use_register) ? wb_to_id_back_pass_bus.write_data[15:8] : register_file_read_data_2[15:8];
+
+  assign source_register_value[23:16] =
+    (ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == source_register) ? ex_to_id_back_pass_bus.write_data[23:16] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[2] && io_to_id_back_pass_bus.write_register == source_register) ? io_to_id_back_pass_bus.write_data[23:16] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[2] && wb_to_id_back_pass_bus.write_register == source_register) ? wb_to_id_back_pass_bus.write_data[23:16] : register_file_read_data_1[23:16];
+  assign multi_use_register_value[23:16] =
+    (ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == multi_use_register) ? ex_to_id_back_pass_bus.write_data[23:16] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[2] && io_to_id_back_pass_bus.write_register == multi_use_register) ? io_to_id_back_pass_bus.write_data[23:16] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[2] && wb_to_id_back_pass_bus.write_register == multi_use_register) ? wb_to_id_back_pass_bus.write_data[23:16] : register_file_read_data_2[23:16];
+
+  assign source_register_value[31:24] =
+    (ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == source_register) ? ex_to_id_back_pass_bus.write_data[31:24] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[3] && io_to_id_back_pass_bus.write_register == source_register) ? io_to_id_back_pass_bus.write_data[31:24] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[3] && wb_to_id_back_pass_bus.write_register == source_register) ? wb_to_id_back_pass_bus.write_data[31:24] : register_file_read_data_1[31:24];
+  assign multi_use_register_value[31:24] =
+    (ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == multi_use_register) ? ex_to_id_back_pass_bus.write_data[31:24] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[3] && io_to_id_back_pass_bus.write_register == multi_use_register) ? io_to_id_back_pass_bus.write_data[31:24] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[3] && wb_to_id_back_pass_bus.write_register == multi_use_register) ? wb_to_id_back_pass_bus.write_data[31:24] : register_file_read_data_2[31:24];
+
+  assign source_register_post_value[7:0] =
+    (io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == source_register) ? io_to_id_back_pass_bus.previous_write_data[7:0] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[0] && io_to_id_back_pass_bus.write_register == source_register) ? io_to_id_back_pass_bus.write_data[7:0] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[0] && wb_to_id_back_pass_bus.write_register == source_register) ? wb_to_id_back_pass_bus.write_data[7:0] : register_file_read_data_1[7:0];
+  assign multi_use_register_post_value[7:0] =
+    (io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == multi_use_register) ? io_to_id_back_pass_bus.previous_write_data[7:0] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[0] && io_to_id_back_pass_bus.write_register == multi_use_register) ? io_to_id_back_pass_bus.write_data[7:0] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[0] && wb_to_id_back_pass_bus.write_register == multi_use_register) ? wb_to_id_back_pass_bus.write_data[7:0] : register_file_read_data_2[7:0];
+
+  assign source_register_post_value[15:8] =
+    (io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == source_register) ? io_to_id_back_pass_bus.previous_write_data[15:8] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[1] && io_to_id_back_pass_bus.write_register == source_register) ? io_to_id_back_pass_bus.write_data[15:8] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[1] && wb_to_id_back_pass_bus.write_register == source_register) ? wb_to_id_back_pass_bus.write_data[15:8] : register_file_read_data_1[15:8];
+  assign multi_use_register_post_value[15:8] =
+    (io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == multi_use_register) ? io_to_id_back_pass_bus.previous_write_data[15:8] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[1] && io_to_id_back_pass_bus.write_register == multi_use_register) ? io_to_id_back_pass_bus.write_data[15:8] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[1] && wb_to_id_back_pass_bus.write_register == multi_use_register) ? wb_to_id_back_pass_bus.write_data[15:8] : register_file_read_data_2[15:8];
+
+  assign source_register_post_value[23:16] =
+    (io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == source_register) ? io_to_id_back_pass_bus.previous_write_data[23:16] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[2] && io_to_id_back_pass_bus.write_register == source_register) ? io_to_id_back_pass_bus.write_data[23:16] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[2] && wb_to_id_back_pass_bus.write_register == source_register) ? wb_to_id_back_pass_bus.write_data[23:16] : register_file_read_data_1[23:16];
+  assign multi_use_register_post_value[23:16] =
+    (io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == multi_use_register) ? io_to_id_back_pass_bus.previous_write_data[23:16] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[2] && io_to_id_back_pass_bus.write_register == multi_use_register) ? io_to_id_back_pass_bus.write_data[23:16] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[2] && wb_to_id_back_pass_bus.write_register == multi_use_register) ? wb_to_id_back_pass_bus.write_data[23:16] : register_file_read_data_2[23:16];
+
+  assign source_register_post_value[31:24] =
+    (io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == source_register) ? io_to_id_back_pass_bus.previous_write_data[31:24] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[3] && io_to_id_back_pass_bus.write_register == source_register) ? io_to_id_back_pass_bus.write_data[31:24] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[3] && wb_to_id_back_pass_bus.write_register == source_register) ? wb_to_id_back_pass_bus.write_data[31:24] : register_file_read_data_1[31:24];
+  assign multi_use_register_post_value[31:24] =
+    (io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == multi_use_register) ? io_to_id_back_pass_bus.previous_write_data[31:24] :
+    (io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[3] && io_to_id_back_pass_bus.write_register == multi_use_register) ? io_to_id_back_pass_bus.write_data[31:24] :
+    (wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[3] && wb_to_id_back_pass_bus.write_register == multi_use_register) ? wb_to_id_back_pass_bus.write_data[31:24] : register_file_read_data_2[31:24];
+
+  assign source_registers_are_equal = (source_register_post_value == multi_use_register_post_value);
+  assign source_register_is_negative = (source_register_post_value[CPU_DATA_WIDTH - 1] == 1'b1);
+  assign source_register_is_positive = (~source_register_is_negative && (source_register_post_value != 32'b0));
   assign branch_taken =
     ((instruction_beq && source_registers_are_equal) ||
       ((instruction_bgez || instruction_bgezal) && ~source_register_is_negative) ||
@@ -348,5 +418,5 @@ module id_stage (
   assign branch_target =
     (instruction_beq || instruction_bgez || instruction_bgezal || instruction_bgtz || instruction_blez || instruction_bltz || instruction_bltzal || instruction_bne) ?
       (if_to_id_instruction_bus.program_count + {{14{immediate[15]}}, immediate[15:0], 2'b0}) :
-    (instruction_jalr || instruction_jr) ? source_register_value : {if_to_id_instruction_bus.program_count[31:28], jump_address[25:0], 2'b0};
+    (instruction_jalr || instruction_jr) ? source_register_post_value : {if_to_id_instruction_bus.program_count[31:28], jump_address[25:0], 2'b0};
 endmodule : id_stage

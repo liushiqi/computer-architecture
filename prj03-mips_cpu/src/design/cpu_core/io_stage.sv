@@ -30,12 +30,26 @@ module io_state (
   CpuData multiply_low_register;
   CpuData multiply_high_register;
 
+  wire [3:0] register_file_write_strobe;
+  assign register_file_write_strobe =
+    ({4{~from_ex_data.is_load_left & ~from_ex_data.is_load_right}} & 4'b1111) |
+    ({4{from_ex_data.is_load_left}} & (
+      ({4{from_ex_data.memory_address_final == 2'b00}} & 4'b1000) |
+      ({4{from_ex_data.memory_address_final == 2'b01}} & 4'b1100) |
+      ({4{from_ex_data.memory_address_final == 2'b10}} & 4'b1110) |
+      ({4{from_ex_data.memory_address_final == 2'b11}} & 4'b1111))) |
+    ({4{from_ex_data.is_load_right}} & (
+      ({4{from_ex_data.memory_address_final == 2'b00}} & 4'b1111) |
+      ({4{from_ex_data.memory_address_final == 2'b01}} & 4'b0111) |
+      ({4{from_ex_data.memory_address_final == 2'b10}} & 4'b0011) |
+      ({4{from_ex_data.memory_address_final == 2'b11}} & 4'b0001)));
   assign io_to_wb_bus = '{
     valid: io_to_wb_valid,
     program_count: io_program_count,
     final_result: final_result,
     register_file_address: from_ex_data.destination_register,
-    register_file_write_enabled: from_ex_data.register_write
+    register_file_write_enabled: from_ex_data.register_write,
+    register_file_write_strobe: register_file_write_strobe
   };
 
   wire previous_valid;
@@ -43,6 +57,7 @@ module io_state (
   assign io_to_id_back_pass_bus = '{
     valid: from_ex_data.register_write & io_valid,
     write_register: from_ex_data.destination_register,
+    write_strobe: register_file_write_strobe,
     write_data: final_result,
     previous_valid: previous_valid,
     previous_write_register: from_ex_data.destination_register,
@@ -84,7 +99,24 @@ module io_state (
     end
   end
 
-  assign memory_read_result = data_read_data;
+  assign memory_read_result =
+    from_ex_data.is_load_byte ? (
+      from_ex_data.memory_address_final == 2'b00 ? {{24{~from_ex_data.memory_io_unsigned & data_read_data[7]}}, data_read_data[7:0]} :
+      from_ex_data.memory_address_final == 2'b01 ? {{24{~from_ex_data.memory_io_unsigned & data_read_data[15]}}, data_read_data[15:8]} :
+      from_ex_data.memory_address_final == 2'b10 ? {{24{~from_ex_data.memory_io_unsigned & data_read_data[23]}}, data_read_data[23:16]} :
+        {{24{~from_ex_data.memory_io_unsigned & data_read_data[31]}}, data_read_data[31:24]}) :
+    from_ex_data.is_load_half_word ? (
+      from_ex_data.memory_address_final == 2'b00 ? {{16{~from_ex_data.memory_io_unsigned & data_read_data[15]}}, data_read_data[15:0]} :
+        {{16{~from_ex_data.memory_io_unsigned & data_read_data[31]}}, data_read_data[31:16]}) :
+    from_ex_data.is_load_left ? (
+      from_ex_data.memory_address_final == 2'b00 ? {data_read_data[7:0], 24'b0} :
+      from_ex_data.memory_address_final == 2'b01 ? {data_read_data[15:0], 16'b0} :
+      from_ex_data.memory_address_final == 2'b10 ? {data_read_data[23:0], 8'b0} : data_read_data) :
+    from_ex_data.is_load_right ? (
+      from_ex_data.memory_address_final == 2'b00 ? data_read_data :
+      from_ex_data.memory_address_final == 2'b01 ? {8'b0, data_read_data[31:8]} :
+      from_ex_data.memory_address_final == 2'b10 ? {16'b0, data_read_data[31:16]} :
+        {24'b0, data_read_data[31:24]}) : data_read_data;
 
   assign final_result =
     from_ex_data.result_is_from_memory ? memory_read_result :

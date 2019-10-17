@@ -93,7 +93,9 @@ package ex_stage_params;
 
   typedef struct packed {
     logic valid;
+    logic data_valid;
     logic [4:0] write_register;
+    CpuData write_data;
   } EXToIDBackPassData;
 
   typedef struct packed {
@@ -103,7 +105,12 @@ package ex_stage_params;
     CpuData source_register_data;
     logic [4:0] destination_register;
     logic register_write;
-    logic [3:0] register_write_strobe;
+    logic [1:0] memory_address_final;
+    logic is_load_left;
+    logic is_load_right;
+    logic is_load_half_word;
+    logic is_load_byte;
+    logic memory_io_unsigned;
     logic result_is_from_memory;
     logic multiply_valid;
     multiplier_params::MultiplyResultData multiply_result;
@@ -126,6 +133,7 @@ package io_stage_params;
   typedef struct packed {
     logic valid;
     logic [4:0] write_register;
+    logic [3:0] write_strobe;
     CpuData write_data;
     logic previous_valid;
     logic [4:0] previous_write_register;
@@ -138,6 +146,7 @@ package io_stage_params;
     CpuData final_result;
     logic [4:0] register_file_address;
     logic register_file_write_enabled;
+    logic [3:0] register_file_write_strobe;
   } IOToWBData;
 endpackage : io_stage_params
 
@@ -149,12 +158,14 @@ package wb_stage_params;
   typedef struct packed {
     logic valid;
     logic [4:0] write_register;
+    logic [3:0] write_strobe;
     CpuData write_data;
   } WBToIDBackPassData;
 
   typedef struct packed {
     logic write_enabled;
     logic [4:0] write_address;
+    logic [3:0] write_strobe;
     CpuData write_data;
   } WBToRegisterFileData;
 endpackage : wb_stage_params
