@@ -13,7 +13,7 @@ module io_state (
   // to wb data
   output io_stage_params::IOToWBData io_to_wb_bus,
   // from data sram
-  input cpu_core_params::CpuData data_read_data
+  input cpu_core_params::CpuData data_ram_read_data
 );
   import io_stage_params::*;
   reg io_valid;
@@ -101,22 +101,22 @@ module io_state (
 
   assign memory_read_result =
     from_ex_data.is_load_byte ? (
-      from_ex_data.memory_address_final == 2'b00 ? {{24{~from_ex_data.memory_io_unsigned & data_read_data[7]}}, data_read_data[7:0]} :
-      from_ex_data.memory_address_final == 2'b01 ? {{24{~from_ex_data.memory_io_unsigned & data_read_data[15]}}, data_read_data[15:8]} :
-      from_ex_data.memory_address_final == 2'b10 ? {{24{~from_ex_data.memory_io_unsigned & data_read_data[23]}}, data_read_data[23:16]} :
-        {{24{~from_ex_data.memory_io_unsigned & data_read_data[31]}}, data_read_data[31:24]}) :
+      from_ex_data.memory_address_final == 2'b00 ? {{24{~from_ex_data.memory_io_unsigned & data_ram_read_data[7]}}, data_ram_read_data[7:0]} :
+      from_ex_data.memory_address_final == 2'b01 ? {{24{~from_ex_data.memory_io_unsigned & data_ram_read_data[15]}}, data_ram_read_data[15:8]} :
+      from_ex_data.memory_address_final == 2'b10 ? {{24{~from_ex_data.memory_io_unsigned & data_ram_read_data[23]}}, data_ram_read_data[23:16]} :
+        {{24{~from_ex_data.memory_io_unsigned & data_ram_read_data[31]}}, data_ram_read_data[31:24]}) :
     from_ex_data.is_load_half_word ? (
-      from_ex_data.memory_address_final == 2'b00 ? {{16{~from_ex_data.memory_io_unsigned & data_read_data[15]}}, data_read_data[15:0]} :
-        {{16{~from_ex_data.memory_io_unsigned & data_read_data[31]}}, data_read_data[31:16]}) :
+      from_ex_data.memory_address_final == 2'b00 ? {{16{~from_ex_data.memory_io_unsigned & data_ram_read_data[15]}}, data_ram_read_data[15:0]} :
+        {{16{~from_ex_data.memory_io_unsigned & data_ram_read_data[31]}}, data_ram_read_data[31:16]}) :
     from_ex_data.is_load_left ? (
-      from_ex_data.memory_address_final == 2'b00 ? {data_read_data[7:0], 24'b0} :
-      from_ex_data.memory_address_final == 2'b01 ? {data_read_data[15:0], 16'b0} :
-      from_ex_data.memory_address_final == 2'b10 ? {data_read_data[23:0], 8'b0} : data_read_data) :
+      from_ex_data.memory_address_final == 2'b00 ? {data_ram_read_data[7:0], 24'b0} :
+      from_ex_data.memory_address_final == 2'b01 ? {data_ram_read_data[15:0], 16'b0} :
+      from_ex_data.memory_address_final == 2'b10 ? {data_ram_read_data[23:0], 8'b0} : data_ram_read_data) :
     from_ex_data.is_load_right ? (
-      from_ex_data.memory_address_final == 2'b00 ? data_read_data :
-      from_ex_data.memory_address_final == 2'b01 ? {8'b0, data_read_data[31:8]} :
-      from_ex_data.memory_address_final == 2'b10 ? {16'b0, data_read_data[31:16]} :
-        {24'b0, data_read_data[31:24]}) : data_read_data;
+      from_ex_data.memory_address_final == 2'b00 ? data_ram_read_data :
+      from_ex_data.memory_address_final == 2'b01 ? {8'b0, data_ram_read_data[31:8]} :
+      from_ex_data.memory_address_final == 2'b10 ? {16'b0, data_ram_read_data[31:16]} :
+        {24'b0, data_ram_read_data[31:24]}) : data_ram_read_data;
 
   assign final_result =
     from_ex_data.result_is_from_memory ? memory_read_result :

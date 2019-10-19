@@ -4,17 +4,17 @@ module cpu_core (
   input clock,
   input reset_,
   // inst sram interface
-  output instruction_enabled,
-  output [3:0] instruction_write_strobe,
-  output [31:0] instruction_address,
-  output [31:0] instruction_write_data,
-  input [31:0] instruction_read_data,
+  output instruction_ram_enabled,
+  output [3:0] instruction_ram_write_strobe,
+  output [31:0] instruction_ram_address,
+  output [31:0] instruction_ram_write_data,
+  input [31:0] instruction_ram_read_data,
   // data sram interface
-  output data_enabled,
-  output [3:0] data_write_enabled,
-  output [31:0] data_address,
-  output [31:0] data_write_data,
-  input [31:0] data_read_data,
+  output data_ram_enabled,
+  output [3:0] data_ram_write_enabled,
+  output [31:0] data_ram_address,
+  output [31:0] data_ram_write_data,
+  input [31:0] data_ram_read_data,
   // trace debug interface
   output [31:0] debug_program_count,
   output [3:0] debug_register_file_write_enabled,
@@ -49,11 +49,11 @@ module cpu_core (
     // output to id
     .if_to_id_instruction_bus,
     // instruction sram interface
-    .instruction_enabled,
-    .instruction_write_strobe,
-    .instruction_address,
-    .instruction_write_data,
-    .instruction_read_data
+    .instruction_ram_enabled,
+    .instruction_ram_write_strobe,
+    .instruction_ram_address,
+    .instruction_ram_write_data,
+    .instruction_ram_read_data
   );
 
   // instruction decode stage
@@ -91,10 +91,10 @@ module cpu_core (
     // to io
     .ex_to_io_bus,
     // data sram interface
-    .data_enabled,
-    .data_write_enabled,
-    .data_address,
-    .data_write_data
+    .data_ram_enabled,
+    .data_ram_write_enabled,
+    .data_ram_address,
+    .data_ram_write_data
   );
 
   // io stage
@@ -111,7 +111,7 @@ module cpu_core (
     // to io data
     .io_to_wb_bus,
     // from data sram
-    .data_read_data
+    .data_ram_read_data
   );
 
   // write back stage

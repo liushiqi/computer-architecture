@@ -13,10 +13,10 @@ module ex_stage (
   // to io data
   output ex_stage_params::EXToIOData ex_to_io_bus,
   // data sram interface
-  output data_enabled,
-  output [3:0] data_write_enabled,
-  output [31:0] data_address,
-  output [31:0] data_write_data
+  output data_ram_enabled,
+  output [3:0] data_ram_write_enabled,
+  output [31:0] data_ram_address,
+  output [31:0] data_ram_write_data
 );
   import ex_stage_params::*;
   reg ex_valid;
@@ -104,8 +104,8 @@ module ex_stage (
     .alu_output(alu_result)
   );
 
-  assign data_enabled = 1'b1;
-  assign data_write_enabled = from_id_data.memory_write && ex_valid ? (
+  assign data_ram_enabled = 1'b1;
+  assign data_ram_write_enabled = from_id_data.memory_write && ex_valid ? (
     ({4{from_id_data.memory_io_type[4]}} & 4'b1111) |
     ({4{from_id_data.memory_io_type[3]}} & (
       ({4{alu_result[1:0] == 2'b00}} & 4'b0001) |
@@ -126,8 +126,8 @@ module ex_stage (
       ({4{alu_result[1:0] == 2'b10}} & 4'b0100) |
       ({4{alu_result[1:0] == 2'b11}} & 4'b1000)))
   ) : 4'h0;
-  assign data_address = {alu_result[31:2], 2'b0};
-  assign data_write_data =
+  assign data_ram_address = {alu_result[31:2], 2'b0};
+  assign data_ram_write_data =
     from_id_data.memory_io_type[0] ? {4{from_id_data.multi_use_register_value[7:0]}} :
     from_id_data.memory_io_type[2] ? {2{from_id_data.multi_use_register_value[15:0]}} :
     from_id_data.memory_io_type[1] ? (

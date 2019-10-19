@@ -139,17 +139,17 @@ cpu_core cpu(
     .clock(cpu_clk   ),
     .reset_(cpu_resetn),  //low active
 
-    .instruction_enabled(cpu_inst_en   ),
-    .instruction_write_strobe(cpu_inst_wen  ),
-    .instruction_address(cpu_inst_addr ),
-    .instruction_write_data(cpu_inst_wdata),
-    .instruction_read_data(cpu_inst_rdata),
+    .instruction_ram_enabled(cpu_inst_en   ),
+    .instruction_ram_write_strobe(cpu_inst_wen  ),
+    .instruction_ram_address(cpu_inst_addr ),
+    .instruction_ram_write_data(cpu_inst_wdata),
+    .instruction_ram_read_data(cpu_inst_rdata),
     
-    .data_enabled(cpu_data_en   ),
-    .data_write_enabled(cpu_data_wen  ),
-    .data_address(cpu_data_addr ),
-    .data_write_data(cpu_data_wdata),
-    .data_read_data(cpu_data_rdata),
+    .data_ram_enabled(cpu_data_en   ),
+    .data_ram_write_enabled(cpu_data_wen  ),
+    .data_ram_address(cpu_data_addr ),
+    .data_ram_write_data(cpu_data_wdata),
+    .data_ram_read_data(cpu_data_rdata),
 
     //debug
     .debug_program_count(debug_wb_pc      ),

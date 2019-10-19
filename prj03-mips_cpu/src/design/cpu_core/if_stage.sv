@@ -10,11 +10,11 @@ module if_stage (
   // to id
   output if_stage_params::IFToIDInstructionBusData if_to_id_instruction_bus,
   // instruction sram interface
-  output instruction_enabled,
-  output [3:0] instruction_write_strobe,
-  output cpu_core_params::Address instruction_address,
-  output cpu_core_params::CpuData instruction_write_data,
-  input cpu_core_params::CpuData instruction_read_data
+  output instruction_ram_enabled,
+  output [3:0] instruction_ram_write_strobe,
+  output cpu_core_params::Address instruction_ram_address,
+  output cpu_core_params::CpuData instruction_ram_write_data,
+  input cpu_core_params::CpuData instruction_ram_read_data
 );
   import if_stage_params::*;
   reg if_valid;
@@ -59,10 +59,10 @@ module if_stage (
     end
   end
 
-  assign instruction_enabled = to_if_valid && if_allow_in;
-  assign instruction_write_strobe = 4'h0;
-  assign instruction_address = next_program_count;
-  assign instruction_write_data = 32'b0;
+  assign instruction_ram_enabled = to_if_valid && if_allow_in;
+  assign instruction_ram_write_strobe = 4'h0;
+  assign instruction_ram_address = next_program_count;
+  assign instruction_ram_write_data = 32'b0;
 
-  assign if_instruction = instruction_read_data;
+  assign if_instruction = instruction_ram_read_data;
 endmodule: if_stage
