@@ -78,7 +78,7 @@ package divider_params;
   export cpu_core_params::CpuData;
   export cpu_core_params::CPU_DATA_WIDTH;
   
-  typedef enum bit [1:0] {
+  typedef enum logic [1:0] {
     WAITING_STATE = 2'b00,
     LOAD_STATE = 2'b01,
     DIVIDE_STATE = 2'b10,
@@ -169,5 +169,12 @@ package wb_stage_params;
     CpuData write_data;
   } WBToRegisterFileData;
 endpackage : wb_stage_params
+
+package selector_params;
+  typedef enum logic {
+    LOW_TO_HIGH,
+    HIGH_TO_LOW
+  } Priority;
+endpackage
 
 `endif

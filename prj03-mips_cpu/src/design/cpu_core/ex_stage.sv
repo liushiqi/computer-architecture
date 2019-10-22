@@ -126,7 +126,7 @@ module ex_stage (
       ({4{alu_result[1:0] == 2'b10}} & 4'b0100) |
       ({4{alu_result[1:0] == 2'b11}} & 4'b1000)))
   ) : 4'h0;
-  assign data_ram_address = {alu_result[31:2], 2'b0};
+  assign data_ram_address = from_id_data.memory_io_type[1] ? {alu_result[31:2], 2'b0} : alu_result;
   assign data_ram_write_data =
     from_id_data.memory_io_type[0] ? {4{from_id_data.multi_use_register_value[7:0]}} :
     from_id_data.memory_io_type[2] ? {2{from_id_data.multi_use_register_value[15:0]}} :
