@@ -37,25 +37,25 @@ module coprocessor0 (
     interrupt_enabled: status_interrupt_enabled
   };
   always_ff @(posedge clock) begin
-    if (wb_to_cp0_data_bus.write_enabled & address_status) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_status) begin
       status_interrupt_mask <= status_write_value.interrupt_mask;
     end
   end
   always_ff @(posedge clock) begin
     if (reset) begin
       status_exception_level <= 1'b0;
-    end else if (wb_to_cp0_data_bus.write_enabled & address_status) begin
-      status_exception_level <= status_write_value.exception_level;
     end else if (wb_to_cp0_data_bus.exception_valid) begin
       status_exception_level <= 1'b1;
     end else if (wb_to_cp0_data_bus.eret_flush) begin
       status_exception_level <= 1'b1;
+    end else if (wb_to_cp0_data_bus.write_enabled && address_status) begin
+      status_exception_level <= status_write_value.exception_level;
     end
   end
   always_ff @(posedge clock) begin
     if (reset) begin
       status_interrupt_enabled <= 0;
-    end else if (wb_to_cp0_data_bus.write_enabled & address_status) begin
+    end else if (wb_to_cp0_data_bus.write_enabled && address_status) begin
       status_interrupt_enabled <= status_write_value.interrupt_enabled;
     end
   end
@@ -81,6 +81,8 @@ module coprocessor0 (
   always_ff @(posedge clock) begin
     if (reset) begin
       cause_in_delay_slot <= 1'b0;
+    end else if (wb_to_cp0_data_bus.exception_valid && status_value.exception_level) begin
+      cause_in_delay_slot <= wb_to_cp0_data_bus.in_delay_slot;
     end
   end
   always_ff @(posedge clock) begin
@@ -96,14 +98,21 @@ module coprocessor0 (
   always_ff @(posedge clock) begin
     if (reset) begin
       cause_software_interrupt <= 2'b0;
-    end else if (wb_to_cp0_data_bus.write_enabled & address_cause) begin
+    end else if (wb_to_cp0_data_bus.write_enabled && address_cause) begin
       cause_software_interrupt <= cause_write_value.software_interrupt;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.exception_valid) begin
+      cause_exception_code <= wb_to_cp0_data_bus.exception_code;
     end
   end
 
   EPCData epc_value;
   always_ff @(posedge clock) begin
-    if (wb_to_cp0_data_bus.write_enabled & wb_to_cp0_data_bus.address_epc) begin
+    if (wb_to_cp0_data_bus.exception_valid && !status_value.exception_level) begin
+      epc_value <= wb_to_cp0_data_bus.in_delay_slot ? (wb_to_cp0_data_bus.exception_address - 4) : wb_to_cp0_data_bus.exception_address;
+    end else if (wb_to_cp0_data_bus.write_enabled && wb_to_cp0_data_bus.address_epc) begin
       epc_value <= wb_to_cp0_data_bus.write_data;
     end
   end

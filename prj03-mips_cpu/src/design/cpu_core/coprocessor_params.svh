@@ -12,7 +12,10 @@ package coprocessor0_params;
     logic write_enabled;
     CpuData write_data;
     logic exception_valid;
+    CpuData exception_address;
     logic eret_flish;
+    logic in_delay_slot;
+    logic [4:0] exception_code;
   } WBToCP0Data;
 
   typedef struct packed {
