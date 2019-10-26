@@ -122,4 +122,7 @@ module coprocessor0 (
     ({CPU_DATA_WIDTH{address_status}} & CpuData'(status_value)) ||
     ({CPU_DATA_WIDTH{address_cause}} & CpuData'(cause_value)) ||
     ({CPU_DATA_WIDTH{address_epc}} & CpuData'(epc_value));
+  assign cp0_to_if_data_bus = '{
+    exception_address: epc_value
+  };
 endmodule;

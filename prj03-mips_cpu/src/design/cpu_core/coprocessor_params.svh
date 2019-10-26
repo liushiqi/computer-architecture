@@ -7,7 +7,7 @@ package coprocessor0_params;
   export cpu_core_params::CPU_DATA_WIDTH;
 
   typedef struct packed {
-    AddressData exception_pc;
+    Address exception_address;
   } CP0ToIFData;
 
   typedef struct packed {
@@ -16,7 +16,7 @@ package coprocessor0_params;
     logic write_enabled;
     CpuData write_data;
     logic exception_valid;
-    AddressData exception_address;
+    Address exception_address;
     logic eret_flush;
     logic in_delay_slot;
     logic [4:0] exception_code;
@@ -43,7 +43,7 @@ package coprocessor0_params;
     logic [1:0] zero3;
   } CauseData;
 
-  typedef AddressData EPCData;
+  typedef Address EPCData;
 endpackage;
 
 `endif
