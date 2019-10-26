@@ -73,7 +73,7 @@ module wb_stage (
     if (reset) begin
       wb_valid <= 1'b0;
     end else if (wb_allow_in) begin
-      wb_valid <= (from_io_data.exception_valid || from_io_data.eret_flush) ? 1'b0 : io_to_wb_bus.valid;
+      wb_valid <= (exception_valid || eret_flush) ? 1'b0 : io_to_wb_bus.valid;
     end
   end
 
