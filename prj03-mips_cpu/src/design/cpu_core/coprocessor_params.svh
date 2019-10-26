@@ -11,6 +11,8 @@ package coprocessor0_params;
     logic [2:0] address_select;
     logic write_enabled;
     CpuData write_data;
+    logic exception_valid;
+    logic eret_flish;
   } WBToCP0Data;
 
   typedef struct packed {

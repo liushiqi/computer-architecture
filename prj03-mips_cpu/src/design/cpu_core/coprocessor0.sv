@@ -46,6 +46,10 @@ module coprocessor0 (
       status_exception_level <= 1'b0;
     end else if (wb_to_cp0_data_bus.write_enabled & address_status) begin
       status_exception_level <= status_write_value.exception_level;
+    end else if (wb_to_cp0_data_bus.exception_valid) begin
+      status_exception_level <= 1'b1;
+    end else if (wb_to_cp0_data_bus.eret_flush) begin
+      status_exception_level <= 1'b1;
     end
   end
   always_ff @(posedge clock) begin
