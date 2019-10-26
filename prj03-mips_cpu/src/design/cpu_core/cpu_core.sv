@@ -42,6 +42,7 @@ module cpu_core (
   io_stage_params::IOToIDBackPassData io_to_id_back_pass_bus;
 
   wb_stage_params::WBToRegisterFileData wb_to_register_file_bus;
+  wb_stage_params::WBExceptionBus wb_exception_bus;
   wb_stage_params::WBToIDBackPassData wb_to_id_back_pass_bus;
 
   coprocessor0_params::CP0ToIFData cp0_to_if_data_bus;
@@ -58,6 +59,8 @@ module cpu_core (
     .id_to_if_branch_bus,
     // output to id
     .if_to_id_instruction_bus,
+    // exception bus
+    .wb_exception_bus,
     // instruction sram interface
     .instruction_ram_enabled,
     .instruction_ram_write_strobe,
@@ -83,6 +86,8 @@ module cpu_core (
     .id_to_ex_decode_bus,
     // to if branch
     .id_to_if_branch_bus,
+    // exception bus
+    .wb_exception_bus,
     //to rf: for write back
     .wb_to_register_file_bus
   );
@@ -100,6 +105,8 @@ module cpu_core (
     .ex_to_id_back_pass_bus,
     // to io
     .ex_to_io_bus,
+    // exception bus
+    .wb_exception_bus,
     // data sram interface
     .data_ram_enabled,
     .data_ram_write_enabled,
@@ -118,6 +125,8 @@ module cpu_core (
     .ex_to_io_bus,
     // to id backpass
     .io_to_id_back_pass_bus,
+    // exception bus
+    .wb_exception_bus,
     // to io data
     .io_to_wb_bus,
     // from data sram
@@ -138,6 +147,8 @@ module cpu_core (
     .wb_to_register_file_bus,
     // to cp0 write data
     .wb_to_cp0_data_bus,
+    // exception bus
+    .wb_exception_bus,
     // trace debug interface
     .debug_program_count,
     .debug_register_file_write_enabled,
