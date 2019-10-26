@@ -147,6 +147,7 @@ module cpu_core (
     .wb_to_register_file_bus,
     // to cp0 write data
     .wb_to_cp0_data_bus,
+    .cp0_read_data,
     // exception bus
     .wb_exception_bus,
     // trace debug interface

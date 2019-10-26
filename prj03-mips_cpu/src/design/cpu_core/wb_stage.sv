@@ -14,6 +14,7 @@ module wb_stage (
   output wb_stage_params::WBToRegisterFileData wb_to_register_file_bus,
   // to cp0 write data
   output coprocessor0_params::WBToCP0Data wb_to_cp0_data_bus,
+  input cpu_core_params::CpuData cp0_read_data,
   // exception data
   output wb_stage_params::WBExceptionBus wb_exception_bus,
   // trace debug interface
@@ -88,6 +89,8 @@ module wb_stage (
       exception_valid <= 1'b0;
     end else if (from_io_data.exception_valid) begin
       exception_valid <= 1'b1;
+    end else if (exception_valid) begin
+      exception_valid <= 1'b0;
     end
   end
 
@@ -96,13 +99,15 @@ module wb_stage (
       eret_flush <= 1'b0;
     end else if (from_io_data.eret_flush) begin
       eret_flush <= 1'b1;
+    end else if (eret_flush) begin
+      eret_flush <= 1'b0;
     end
   end
 
   assign register_file_write_enabled = from_io_data.register_file_write_enabled && !from_io_data.exception_valid && wb_valid;
   assign register_file_write_strobe = from_io_data.register_file_write_strobe;
   assign register_file_write_address = from_io_data.register_file_address;
-  assign register_file_write_data = from_io_data.final_result;
+  assign register_file_write_data = from_io_data.move_from_cp0 ? cp0_read_data : from_io_data.final_result;
 
   // debug info generate
   assign debug_program_count = wb_program_count;

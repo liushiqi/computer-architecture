@@ -38,7 +38,7 @@ testbench:
 trace: sim/trace.txt
 
 sim/trace.txt: sim/data_ram.coe sim/inst_ram.coe
-	vivado -nojournal -nolog -mode batch -source "$(shell pwd)/scripts/trace.tcl" -notrace -tclarg simulation
+	vivado -nojournal -nolog -mode batch -source "$(shell pwd)/scripts/trace.tcl" -notrace -tclarg simulation | tee log/trace.log
 
 clean:
 	for dir in ${TESTBENCH_BASE_DIR}/*; do \
