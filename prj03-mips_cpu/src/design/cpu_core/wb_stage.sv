@@ -89,7 +89,7 @@ module wb_stage (
       exception_valid <= 1'b0;
     end else if (from_io_data.exception_valid) begin
       exception_valid <= 1'b1;
-    end else if (exception_valid) begin
+    end else if (!from_io_data.exception_valid) begin
       exception_valid <= 1'b0;
     end
   end
@@ -99,7 +99,7 @@ module wb_stage (
       eret_flush <= 1'b0;
     end else if (from_io_data.eret_flush) begin
       eret_flush <= 1'b1;
-    end else if (eret_flush) begin
+    end else if (!from_io_data.eret_flush) begin
       eret_flush <= 1'b0;
     end
   end
