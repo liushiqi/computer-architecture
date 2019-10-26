@@ -48,7 +48,7 @@ module coprocessor0 (
     end else if (wb_to_cp0_data_bus.exception_valid) begin
       status_exception_level <= 1'b1;
     end else if (wb_to_cp0_data_bus.eret_flush) begin
-      status_exception_level <= 1'b1;
+      status_exception_level <= 1'b0;
     end else if (wb_to_cp0_data_bus.write_enabled && address_status) begin
       status_exception_level <= status_write_value.exception_level;
     end
@@ -119,8 +119,8 @@ module coprocessor0 (
   end
 
   assign cp0_read_data =
-    ({CPU_DATA_WIDTH{address_status}} & CpuData'(status_value)) ||
-    ({CPU_DATA_WIDTH{address_cause}} & CpuData'(cause_value)) ||
+    ({CPU_DATA_WIDTH{address_status}} & CpuData'(status_value)) |
+    ({CPU_DATA_WIDTH{address_cause}} & CpuData'(cause_value)) |
     ({CPU_DATA_WIDTH{address_epc}} & CpuData'(epc_value));
   assign cp0_to_if_data_bus = '{
     exception_address: epc_value

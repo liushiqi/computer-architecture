@@ -26,8 +26,6 @@ module wb_stage (
   import wb_stage_params::*;
   reg wb_valid;
   wire wb_ready_go;
-  reg exception_valid;
-  reg eret_flush;
 
   io_stage_params::IOToWBData from_io_data; // reg
   ProgramCount wb_program_count;
@@ -47,7 +45,7 @@ module wb_stage (
   assign wb_to_cp0_data_bus = '{
     address_register: from_io_data.cp0_address_register,
     address_select: from_io_data.cp0_address_select,
-    write_enabled: from_io_data.move_to_cp0,
+    write_enabled: wb_valid && from_io_data.move_to_cp0,
     write_data: from_io_data.final_result,
     exception_valid: from_io_data.exception_valid,
     exception_address: wb_program_count,
@@ -64,8 +62,8 @@ module wb_stage (
   };
 
   assign wb_exception_bus = '{
-    exception_valid: exception_valid,
-    eret_flush: eret_flush
+    exception_valid: wb_valid && from_io_data.exception_valid,
+    eret_flush: wb_valid && from_io_data.eret_flush
   };
 
   assign wb_ready_go = 1'b1;
@@ -73,34 +71,16 @@ module wb_stage (
   always_ff @(posedge clock) begin
     if (reset) begin
       wb_valid <= 1'b0;
+    end else if (from_io_data.exception_valid || from_io_data.eret_flush) begin
+      wb_valid <= 1'b0;
     end else if (wb_allow_in) begin
-      wb_valid <= (exception_valid || eret_flush) ? 1'b0 : io_to_wb_bus.valid;
+      wb_valid <= io_to_wb_bus.valid;
     end
   end
 
   always_ff @(posedge clock) begin
     if (io_to_wb_bus.valid && wb_allow_in) begin
       from_io_data <= io_to_wb_bus;
-    end
-  end
-
-  always_ff @(posedge clock) begin
-    if (reset) begin
-      exception_valid <= 1'b0;
-    end else if (from_io_data.exception_valid) begin
-      exception_valid <= 1'b1;
-    end else if (!from_io_data.exception_valid) begin
-      exception_valid <= 1'b0;
-    end
-  end
-
-  always_ff @(posedge clock) begin
-    if (reset) begin
-      eret_flush <= 1'b0;
-    end else if (from_io_data.eret_flush) begin
-      eret_flush <= 1'b1;
-    end else if (!from_io_data.eret_flush) begin
-      eret_flush <= 1'b0;
     end
   end
 
@@ -113,5 +93,5 @@ module wb_stage (
   assign debug_program_count = wb_program_count;
   assign debug_register_file_write_enabled = {4{register_file_write_enabled}} & from_io_data.register_file_write_strobe;
   assign debug_register_file_write_address = from_io_data.register_file_address;
-  assign debug_register_file_write_data = from_io_data.final_result;
+  assign debug_register_file_write_data = register_file_write_data;
 endmodule : wb_stage

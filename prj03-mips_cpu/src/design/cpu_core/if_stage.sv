@@ -42,9 +42,9 @@ module if_stage (
   assign to_if_valid = ~reset;
   assign sequence_program_count = if_program_count + 3'h4;
   assign next_program_count =
-    id_to_if_branch_bus.taken ? id_to_if_branch_bus.target :
     wb_exception_bus.exception_valid ? 32'hbfc00380 :
-    wb_exception_bus.eret_flush ? cp0_to_if_data_bus.exception_address : sequence_program_count;
+    wb_exception_bus.eret_flush ? cp0_to_if_data_bus.exception_address :
+    id_to_if_branch_bus.taken ? id_to_if_branch_bus.target : sequence_program_count;
 
   // if stage
   assign if_ready_go = 1'b1;

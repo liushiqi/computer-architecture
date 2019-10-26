@@ -24,6 +24,7 @@ module ex_stage (
   reg ex_valid;
   wire ex_ready_go;
   wire ex_to_io_valid;
+  reg should_flush;
 
   id_stage_params::IDToEXDecodeBusData from_id_data; // reg
   ProgramCount ex_program_count;
@@ -39,7 +40,6 @@ module ex_stage (
   CpuData divide_remain;
 
   wire result_is_from_memory;
-  reg exception_valid;
 
   assign result_is_from_memory = from_id_data.is_load_operation;
   assign ex_to_io_bus = '{
@@ -48,6 +48,7 @@ module ex_stage (
     alu_result: alu_result,
     source_register_data: from_id_data.source_register_value,
     multi_use_register_data: from_id_data.multi_use_register_value,
+    write_register: from_id_data.write_register,
     destination_register: from_id_data.destination_register,
     multi_use_register: from_id_data.multi_use_register,
     address_select: from_id_data.address_select,
@@ -77,11 +78,11 @@ module ex_stage (
   };
 
   wire [4:0] backpass_address;
-  assign backpass_address = {5{from_id_data.register_write & ex_valid}} & from_id_data.destination_register;
+  assign backpass_address = {5{from_id_data.register_write & ex_valid}} & from_id_data.write_register;
   assign ex_to_id_back_pass_bus = '{
     valid: from_id_data.register_write & ex_valid,
-    data_valid: from_id_data.valid & ~from_id_data.is_load_operation & ~(from_id_data.result_high | from_id_data.result_low) & from_id_data.register_write,
-    write_register: from_id_data.destination_register,
+    data_valid: from_id_data.valid & ~from_id_data.is_load_operation & ~(from_id_data.result_high | from_id_data.result_low) & ~from_id_data.move_from_cp0 & from_id_data.register_write,
+    write_register: from_id_data.write_register,
     write_data: alu_result
   };
 
@@ -90,6 +91,8 @@ module ex_stage (
   assign ex_to_io_valid = ex_valid && ex_ready_go;
   always_ff @(posedge clock) begin
     if (reset) begin
+      ex_valid <= 1'b0;
+    end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
       ex_valid <= 1'b0;
     end else if (ex_allow_in) begin
       ex_valid <= (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) ? 1'b0 : id_to_ex_decode_bus.valid;
@@ -104,11 +107,11 @@ module ex_stage (
 
   always_ff @(posedge clock) begin
     if (reset) begin
-      exception_valid <= 1'b0;
-    end else if (id_to_ex_decode_bus.exception_valid) begin
-      exception_valid <= 1'b1;
+      should_flush <= 1'b0;
+    end else if (from_id_data.exception_valid || from_id_data.eret_flush) begin
+      should_flush <= 1'b1;
     end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
-      exception_valid <= 1'b0;
+      should_flush <= 1'b0;
     end
   end
 
@@ -126,7 +129,7 @@ module ex_stage (
     .alu_output(alu_result)
   );
 
-  assign data_ram_enabled = !exception_valid;
+  assign data_ram_enabled = !should_flush;
   assign data_ram_write_enabled = from_id_data.memory_write && ex_valid ? (
     ({4{from_id_data.memory_io_type[4]}} & 4'b1111) |
     ({4{from_id_data.memory_io_type[3]}} & (

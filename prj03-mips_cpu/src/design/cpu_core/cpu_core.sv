@@ -61,6 +61,7 @@ module cpu_core (
     .if_to_id_instruction_bus,
     // exception bus
     .wb_exception_bus,
+    .cp0_to_if_data_bus,
     // instruction sram interface
     .instruction_ram_enabled,
     .instruction_ram_write_strobe,

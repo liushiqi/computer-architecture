@@ -34,6 +34,7 @@ package id_stage_params;
     CpuData multi_use_register_value;
     CpuData source_register_value;
     logic [15:0] immediate;
+    logic [4:0] write_register;
     logic [4:0] destination_register;
     logic [4:0] multi_use_register;
     logic [2:0] address_select;
@@ -112,6 +113,7 @@ package ex_stage_params;
     CpuData alu_result;
     CpuData source_register_data;
     CpuData multi_use_register_data;
+    logic [4:0] write_register;
     logic [4:0] destination_register;
     logic [4:0] multi_use_register;
     logic [2:0] address_select;
@@ -149,10 +151,12 @@ package io_stage_params;
 
   typedef struct packed {
     logic valid;
+    logic data_valid;
     logic [4:0] write_register;
     logic [3:0] write_strobe;
     CpuData write_data;
     logic previous_valid;
+    logic previous_data_valid;
     logic [4:0] previous_write_register;
     CpuData previous_write_data;
   } IOToIDBackPassData;

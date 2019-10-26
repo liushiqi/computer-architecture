@@ -64,6 +64,7 @@ module id_stage (
   wire [31:0] multi_use_register_post_value;
   wire multi_use_register_is_used;
   reg in_delay_slot;
+  reg should_flush;
 
   wire [5:0] operation_code;
   wire [4:0] source_register;
@@ -163,7 +164,8 @@ module id_stage (
     multi_use_register_value: multi_use_register_value,
     source_register_value: source_register_value,
     immediate: immediate,
-    destination_register: write_register,
+    write_register: write_register,
+    destination_register: destination_register,
     multi_use_register: multi_use_register,
     address_select: id_instruction[2:0],
     memory_write: memory_write,
@@ -197,25 +199,41 @@ module id_stage (
   assign multi_use_register_0_if_unused = multi_use_register & {5{multi_use_register_is_used}};
   wire id_should_be_blocked;
   assign id_should_be_blocked =
-    ex_to_id_back_pass_bus.valid &&
-    (!(ex_to_id_back_pass_bus.data_valid) || is_jump_operation) &&
-    (ex_to_id_back_pass_bus.write_register != 5'b0) &&
-    (ex_to_id_back_pass_bus.write_register == source_register_0_if_unused ||
-      ex_to_id_back_pass_bus.write_register == multi_use_register_0_if_unused);
-  assign id_ready_go = ~id_should_be_blocked;
+    (ex_to_id_back_pass_bus.valid &&
+      (!ex_to_id_back_pass_bus.data_valid || is_jump_operation) &&
+      (ex_to_id_back_pass_bus.write_register != 5'b0) &&
+      (ex_to_id_back_pass_bus.write_register == source_register_0_if_unused ||
+        ex_to_id_back_pass_bus.write_register == multi_use_register_0_if_unused)) ||
+    (io_to_id_back_pass_bus.valid && !io_to_id_back_pass_bus.data_valid &&
+      (io_to_id_back_pass_bus.write_register != 5'b0) &&
+      (io_to_id_back_pass_bus.write_register == source_register_0_if_unused ||
+        io_to_id_back_pass_bus.write_register == multi_use_register_0_if_unused));
+  assign id_ready_go = should_flush || ~id_should_be_blocked;
   assign id_allow_in = !id_valid || (id_ready_go && ex_allow_in);
   assign id_to_ex_valid = id_valid && id_ready_go;
   always_ff @(posedge clock) begin
     if (reset) begin
       id_valid <= 1'b0;
+    end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
+      id_valid <= 1'b0;
     end else if (id_allow_in) begin
-      id_valid <= (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) ? 1'b0 : if_to_id_instruction_bus.valid;
+      id_valid <= if_to_id_instruction_bus.valid;
     end
   end
 
   always_ff @(posedge clock) begin
     if (if_to_id_instruction_bus.valid && id_allow_in) begin
       from_if_data <= if_to_id_instruction_bus;
+    end
+  end
+
+  always_ff @(posedge clock) begin
+    if (reset) begin
+      should_flush <= 1'b0;
+    end else if (id_valid && (instruction_syscall || instruction_eret)) begin
+      should_flush <= 1'b1;
+    end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
+      should_flush <= 1'b0;
     end
   end
 
@@ -325,8 +343,8 @@ module id_stage (
   assign result_low = instruction_mflo | instruction_mtlo;
   assign high_low_write = instruction_mthi | instruction_mtlo;
   assign destination_is_register31 = instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr;
-  assign detination_is_multi_use = instruction_addi | instruction_addiu | instruction_andi | instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lui | instruction_lw | | instruction_lwl | instruction_lwr | instruction_ori | instruction_slti | instruction_sltiu | instruction_xori;
-  assign register_write = ~instruction_beq & ~instruction_bgez & ~instruction_bgtz & ~instruction_blez & ~instruction_bltz & ~instruction_bne & ~instruction_div & ~instruction_divu & ~instruction_j & ~instruction_jr & ~instruction_mtc0 & ~instruction_mthi & ~instruction_mtlo & ~instruction_mult & ~instruction_multu & ~instruction_sb & ~instruction_sh & ~instruction_sw & ~instruction_swl & ~instruction_swr;
+  assign detination_is_multi_use = instruction_addi | instruction_addiu | instruction_andi | instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lui | instruction_lw | | instruction_lwl | instruction_lwr | instruction_mfc0 | instruction_ori | instruction_slti | instruction_sltiu | instruction_xori;
+  assign register_write = ~instruction_beq & ~instruction_bgez & ~instruction_bgtz & ~instruction_blez & ~instruction_bltz & ~instruction_bne & ~instruction_div & ~instruction_divu & ~instruction_eret & ~instruction_j & ~instruction_jr & ~instruction_mtc0 & ~instruction_mthi & ~instruction_mtlo & ~instruction_mult & ~instruction_multu & ~instruction_sb & ~instruction_sh & ~instruction_sw & ~instruction_swl & ~instruction_swr & ~instruction_syscall;
   assign memory_write = instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
   assign memory_io_unsigned = instruction_lbu | instruction_lhu;
   assign is_load_operation = instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lw | instruction_lwl | instruction_lwr;
@@ -361,7 +379,7 @@ module id_stage (
       wire [7:0] inputs_source [4];
       assign select_source = '{
         ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == source_register,
-        io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[i] && io_to_id_back_pass_bus.write_register == source_register,
+        io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.data_valid && io_to_id_back_pass_bus.write_strobe[i] && io_to_id_back_pass_bus.write_register == source_register,
         wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[i] && wb_to_id_back_pass_bus.write_register == source_register
       };
       assign inputs_source = '{
@@ -381,7 +399,7 @@ module id_stage (
       wire [7:0] inputs_multi_use [4];
       assign select_multi_use = '{
         ex_to_id_back_pass_bus.valid && ex_to_id_back_pass_bus.data_valid && ex_to_id_back_pass_bus.write_register == multi_use_register,
-        io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[i] && io_to_id_back_pass_bus.write_register == multi_use_register,
+        io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.data_valid && io_to_id_back_pass_bus.write_strobe[i] && io_to_id_back_pass_bus.write_register == multi_use_register,
         wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[i] && wb_to_id_back_pass_bus.write_register == multi_use_register
       };
       assign inputs_multi_use = '{
@@ -405,8 +423,8 @@ module id_stage (
       wire select_post_source [3];
       wire [7:0] inputs_post_source [4];
       assign select_post_source = '{
-        io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == source_register,
-        io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[i] && io_to_id_back_pass_bus.write_register == source_register,
+        io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_data_valid && io_to_id_back_pass_bus.previous_write_register == source_register,
+        io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.data_valid && io_to_id_back_pass_bus.write_strobe[i] && io_to_id_back_pass_bus.write_register == source_register,
         wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[i] && wb_to_id_back_pass_bus.write_register == source_register
       };
       assign inputs_post_source = '{
@@ -425,8 +443,8 @@ module id_stage (
       wire select_post_multi_use [3];
       wire [7:0] inputs_post_multi_post [4];
       assign select_post_multi_use = '{
-        io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_write_register == multi_use_register,
-        io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.write_strobe[i] && io_to_id_back_pass_bus.write_register == multi_use_register,
+        io_to_id_back_pass_bus.previous_valid && io_to_id_back_pass_bus.previous_data_valid && io_to_id_back_pass_bus.previous_write_register == multi_use_register,
+        io_to_id_back_pass_bus.valid && io_to_id_back_pass_bus.data_valid && io_to_id_back_pass_bus.write_strobe[i] && io_to_id_back_pass_bus.write_register == multi_use_register,
         wb_to_id_back_pass_bus.valid && wb_to_id_back_pass_bus.write_strobe[i] && wb_to_id_back_pass_bus.write_register == multi_use_register
       };
       assign inputs_post_multi_post = '{
