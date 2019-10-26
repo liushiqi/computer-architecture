@@ -213,12 +213,12 @@ module id_stage (
   assign immediate = id_instruction[15:0];
   assign jump_address = id_instruction[25:0];
 
-  decoder_6_to_64 u_decoder_operation(.in(operation_code), .out(operation_code_decoded));
-  decoder_6_to_64 u_decoder_function(.in(function_code), .out(function_code_decoded));
-  decoder_5_to_32 u_decoder_source(.in(source_register), .out(source_register_decoded));
-  decoder_5_to_32 u_decoder_multi_use(.in(multi_use_register), .out(multi_use_register_decoded));
-  decoder_5_to_32 u_decoder_destination(.in(destination_register), .out(destination_register_decoded));
-  decoder_5_to_32 u_decoder_shift_amount(.in(shift_amount), .out(shift_amount_decoded));
+  decoder #(.INPUT_WIDTH(6)) u_decoder_operation(.in(operation_code), .out(operation_code_decoded));
+  decoder #(.INPUT_WIDTH(6)) u_decoder_function(.in(function_code), .out(function_code_decoded));
+  decoder #(.INPUT_WIDTH(5)) u_decoder_source(.in(source_register), .out(source_register_decoded));
+  decoder #(.INPUT_WIDTH(5)) u_decoder_multi_use(.in(multi_use_register), .out(multi_use_register_decoded));
+  decoder #(.INPUT_WIDTH(5)) u_decoder_destination(.in(destination_register), .out(destination_register_decoded));
+  decoder #(.INPUT_WIDTH(5)) u_decoder_shift_amount(.in(shift_amount), .out(shift_amount_decoded));
 
   assign instruction_add = operation_code_decoded[6'h00] & function_code_decoded[6'h20] & shift_amount_decoded[5'h00];
   assign instruction_addi = operation_code_decoded[6'h08];
@@ -349,7 +349,7 @@ module id_stage (
       };
       priorirty_selector #(
         .DataType(logic[7:0])
-      ) selector_source (
+      ) u_selector_source (
         .select(select_source),
         .inputs(inputs_source),
         .result(source_register_value[8 * i + 7-:8])
@@ -369,7 +369,7 @@ module id_stage (
       };
       priorirty_selector #(
         .DataType(logic[7:0])
-      ) selector_multi_use (
+      ) u_selector_multi_use (
         .select(select_multi_use),
         .inputs(inputs_multi_use),
         .result(multi_use_register_value[8 * i + 7-:8])

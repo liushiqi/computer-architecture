@@ -21,6 +21,7 @@ module cpu_core (
   output [4:0] debug_register_file_write_address,
   output [31:0] debug_register_file_write_data
 );
+  import cpu_core_params::*;
   reg reset;
   always_ff @(posedge clock) reset <= ~reset_;
 
@@ -29,14 +30,21 @@ module cpu_core (
   wire io_allow_in;
   wire wb_allow_in;
   if_stage_params::IFToIDInstructionBusData if_to_id_instruction_bus;
+
   id_stage_params::IDToEXDecodeBusData id_to_ex_decode_bus;
   id_stage_params::IDToIFBranchBusData id_to_if_branch_bus;
+
   ex_stage_params::EXToIOData ex_to_io_bus;
   ex_stage_params::EXToIDBackPassData ex_to_id_back_pass_bus;
+
   io_stage_params::IOToWBData io_to_wb_bus;
   io_stage_params::IOToIDBackPassData io_to_id_back_pass_bus;
+
   wb_stage_params::WBToRegisterFileData wb_to_register_file_bus;
   wb_stage_params::WBToIDBackPassData wb_to_id_back_pass_bus;
+
+  coprocessor0_params::WBToCP0Data wb_to_cp0_data_bus;
+  CpuData cp0_read_data;
 
   // instruction fetch stage
   if_stage u_if_stage(
@@ -131,5 +139,12 @@ module cpu_core (
     .debug_register_file_write_enabled,
     .debug_register_file_write_address,
     .debug_register_file_write_data
+  );
+
+  coprocessor0 u_coprocessor0(
+    .clock,
+    .reset,
+    .wb_to_cp0_data_bus,
+    .cp0_read_data
   );
 endmodule : cpu_core
