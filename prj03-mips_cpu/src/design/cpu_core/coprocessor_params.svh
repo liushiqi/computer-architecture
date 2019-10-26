@@ -12,7 +12,7 @@ package coprocessor0_params;
   } WBToCP0Data;
 
   typedef struct packed {
-    logic [7:0] zero1;
+    logic [8:0] zero1;
     logic bev;
     logic [5:0] zero2;
     logic [7:0] mask;
