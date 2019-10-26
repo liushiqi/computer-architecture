@@ -43,7 +43,7 @@ module wb_stage (
 
   assign wb_to_cp0_data_bus = '{
     address_register: from_io_data.cp0_address_register,
-    address_select: from_io_data.address_select,
+    address_select: from_io_data.cp0_address_select,
     write_enabled: from_io_data.move_to_cp0,
     write_data: from_io_data.final_result,
     exception_valid: from_io_data.exception_valid,

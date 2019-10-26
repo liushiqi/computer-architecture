@@ -113,7 +113,7 @@ module coprocessor0 (
   always_ff @(posedge clock) begin
     if (wb_to_cp0_data_bus.exception_valid && !status_value.exception_level) begin
       epc_value <= wb_to_cp0_data_bus.in_delay_slot ? (wb_to_cp0_data_bus.exception_address - 4) : wb_to_cp0_data_bus.exception_address;
-    end else if (wb_to_cp0_data_bus.write_enabled && wb_to_cp0_data_bus.address_epc) begin
+    end else if (wb_to_cp0_data_bus.write_enabled && address_epc) begin
       epc_value <= wb_to_cp0_data_bus.write_data;
     end
   end
