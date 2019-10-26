@@ -61,6 +61,9 @@ module id_stage (
   wire [31:0] source_register_post_value;
   wire [31:0] multi_use_register_post_value;
   wire multi_use_register_is_used;
+  wire [4:0] move_register_address;
+  wire mfc0;
+  wire mtc0;
 
   wire [5:0] operation_code;
   wire [4:0] source_register;
@@ -104,8 +107,10 @@ module id_stage (
   wire instruction_lw;
   wire instruction_lwl;
   wire instruction_lwr;
+  wire instruction_mfc0;
   wire instruction_mfhi;
   wire instruction_mflo;
+  wire instruction_mtc0;
   wire instruction_mthi;
   wire instruction_mtlo;
   wire instruction_mult;
@@ -173,7 +178,10 @@ module id_stage (
     result_high: result_high,
     result_low: result_low,
     high_low_write: high_low_write,
-    alu_operation: alu_operation
+    alu_operation: alu_operation,
+    move_register_address: move_register_address,
+    mfc0: mfc0,
+    mtc0: mtc0
   };
 
   wire [4:0] source_register_0_if_unused;
@@ -248,8 +256,10 @@ module id_stage (
   assign instruction_lw = operation_code_decoded[6'h23];
   assign instruction_lwl = operation_code_decoded[6'h22];
   assign instruction_lwr = operation_code_decoded[6'h26];
+  assign instruction_mfc0 = operation_code_decoded[6'h10] & source_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_mfhi = operation_code_decoded[6'h00] & function_code_decoded[6'h10] & source_register_decoded[5'h00] & multi_use_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_mflo = operation_code_decoded[6'h00] & function_code_decoded[6'h12] & source_register_decoded[5'h00] & multi_use_register_decoded[5'h00] &  shift_amount_decoded[5'h00];
+  assign instruction_mtc0 = operation_code_decoded[6'h10] & source_register_decoded[5'h04] & shift_amount_decoded[5'h00];
   assign instruction_mthi = operation_code_decoded[6'h00] & function_code_decoded[6'h11] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_mtlo = operation_code_decoded[6'h00] & function_code_decoded[6'h13] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_mult = operation_code_decoded[6'h00] & function_code_decoded[6'h18] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
@@ -437,4 +447,9 @@ module id_stage (
     (instruction_beq || instruction_bgez || instruction_bgezal || instruction_bgtz || instruction_blez || instruction_bltz || instruction_bltzal || instruction_bne) ?
       (if_to_id_instruction_bus.program_count + {{14{immediate[15]}}, immediate[15:0], 2'b0}) :
     (instruction_jalr || instruction_jr) ? source_register_post_value : {if_to_id_instruction_bus.program_count[31:28], jump_address[25:0], 2'b0};
+
+  assign mtc0 = instruction_mtc0;
+  assign mfc0 = instruction_mfc0;
+  assign move_register_address = multi_use_register;
+
 endmodule : id_stage

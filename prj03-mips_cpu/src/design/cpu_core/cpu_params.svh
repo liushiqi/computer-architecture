@@ -52,6 +52,9 @@ package id_stage_params;
     logic result_low;
     logic high_low_write;
     logic [11:0] alu_operation;
+    logic [4:0] move_register_address;
+    logic mfc0;
+    logic mtc0;
   } IDToEXDecodeBusData;
 
   typedef struct packed {

@@ -138,7 +138,8 @@ module cpu_core (
     .debug_program_count,
     .debug_register_file_write_enabled,
     .debug_register_file_write_address,
-    .debug_register_file_write_data
+    .debug_register_file_write_data,
+    .wb_to_cp0_data_bus
   );
 
   coprocessor0 u_coprocessor0(

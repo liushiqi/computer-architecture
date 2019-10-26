@@ -15,7 +15,8 @@ module wb_stage (
   output cpu_core_params::ProgramCount debug_program_count,
   output [3:0] debug_register_file_write_enabled,
   output [4:0] debug_register_file_write_address,
-  output cpu_core_params::CpuData debug_register_file_write_data
+  output cpu_core_params::CpuData debug_register_file_write_data,
+  output coprocessor0_params::WBToCP0Data wb_to_cp0_data_bus
 );
   import wb_stage_params::*;
   reg wb_valid;
