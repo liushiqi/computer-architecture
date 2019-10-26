@@ -3,6 +3,8 @@
 
 package coprocessor0_params;
   import cpu_core_params::*;
+  export cpu_core_params::CpuData;
+  export cpu_core_params::CPU_DATA_WIDTH;
 
   typedef struct packed {
     logic [4:0] address_register;
@@ -13,17 +15,17 @@ package coprocessor0_params;
 
   typedef struct packed {
     logic [7:0] zero1;
-    logic bev;
+    logic boot_exception_vector;
     logic [5:0] zero2;
-    logic [7:0] mask;
+    logic [7:0] interrupt_mask;
     logic [5:0] zero3;
     logic exception_level;
     logic interrupt_enabled;
   } StatusData;
 
   typedef struct packed {
-    logic delay_slot;
-    logic yimer_interrupt;
+    logic in_delay_slot;
+    logic timer_interrupt;
     logic [13:0] zero1;
     logic [5:0] hardware_interrupt;
     logic [1:0] software_interrupt;
