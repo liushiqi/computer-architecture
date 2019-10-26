@@ -255,7 +255,7 @@ module id_stage (
   assign instruction_bne = operation_code_decoded[6'h05];
   assign instruction_div = operation_code_decoded[6'h00] & function_code_decoded[6'h1a] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_divu = operation_code_decoded[6'h00] & function_code_decoded[6'h1b] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
-  assign instruction_eret = operation_code_decoded[6'h10] & function_code[6'h18] & source_register_decoded[5'h10] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_eret = operation_code_decoded[6'h10] & function_code_decoded[6'h18] & source_register_decoded[5'h10] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_j = operation_code_decoded[6'h02];
   assign instruction_jal = operation_code_decoded[6'h03];
   assign instruction_jalr = operation_code_decoded[6'h00] & function_code_decoded[6'h09] & multi_use_register_decoded[5'h00] & shift_amount_decoded[5'h00];

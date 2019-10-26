@@ -98,7 +98,7 @@ module io_state (
   always_ff @(posedge clock) begin
     if (reset) begin
       exception_valid <= 1'b0;
-    end else if (id_to_ex_decode_bus.exception_valid || id_to_ex_decode_bus.eret_flush) begin
+    end else if (ex_to_io_bus.exception_valid || ex_to_io_bus.eret_flush) begin
       exception_valid <= 1'b1;
     end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
       exception_valid <= 1'b0;
@@ -144,5 +144,5 @@ module io_state (
     from_ex_data.result_is_from_memory ? memory_read_result :
     from_ex_data.result_high & ~from_ex_data.high_low_write ? multiply_high_register :
     from_ex_data.result_low & ~from_ex_data.high_low_write ? multiply_low_register :
-    from_ex_data.mpve_to_cp0 ? from_ex_data.multi_use_register_data : from_ex_data.alu_result;
+    from_ex_data.move_to_cp0 ? from_ex_data.multi_use_register_data : from_ex_data.alu_result;
 endmodule : io_state
