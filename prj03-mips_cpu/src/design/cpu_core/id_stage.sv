@@ -17,7 +17,9 @@ module id_stage (
   // to fs
   output id_stage_params::IDToIFBranchBusData id_to_if_branch_bus,
   // to register file: for write back stage
-  input wb_stage_params::WBToRegisterFileData wb_to_register_file_bus
+  input wb_stage_params::WBToRegisterFileData wb_to_register_file_bus,
+  // exception data
+  input wb_stage_params::WBExceptionBus wb_exception_bus
 );
   import id_stage_params::*;
   reg id_valid;
@@ -61,9 +63,7 @@ module id_stage (
   wire [31:0] source_register_post_value;
   wire [31:0] multi_use_register_post_value;
   wire multi_use_register_is_used;
-  wire [4:0] move_register_address;
-  wire mfc0;
-  wire mtc0;
+  reg in_delay_slot;
 
   wire [5:0] operation_code;
   wire [4:0] source_register;
@@ -95,6 +95,7 @@ module id_stage (
   wire instruction_bne;
   wire instruction_div;
   wire instruction_divu;
+  wire instruction_eret;
   wire instruction_j;
   wire instruction_jal;
   wire instruction_jalr;
@@ -135,6 +136,7 @@ module id_stage (
   wire instruction_sw;
   wire instruction_swl;
   wire instruction_swr;
+  wire instruction_syscall;
   wire instruction_xor;
   wire instruction_xori;
 
@@ -162,6 +164,8 @@ module id_stage (
     source_register_value: source_register_value,
     immediate: immediate,
     destination_register: write_register,
+    multi_use_register: multi_use_register,
+    address_select: id_instruction[2:0],
     memory_write: memory_write,
     memory_io_type: memory_io_type,
     memory_io_unsigned: memory_io_unsigned,
@@ -179,9 +183,12 @@ module id_stage (
     result_low: result_low,
     high_low_write: high_low_write,
     alu_operation: alu_operation,
-    move_register_address: move_register_address,
-    mfc0: mfc0,
-    mtc0: mtc0
+    move_from_cp0: instruction_mfc0,
+    move_to_cp0: instruction_mtc0,
+    exception_valid: instruction_syscall,
+    in_delay_slot: in_delay_slot,
+    eret_flush: instruction_eret,
+    exception_code: 5'h8
   };
 
   wire [4:0] source_register_0_if_unused;
@@ -202,7 +209,7 @@ module id_stage (
     if (reset) begin
       id_valid <= 1'b0;
     end else if (id_allow_in) begin
-      id_valid <= if_to_id_instruction_bus.valid;
+      id_valid <= (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) ? 1'b0 : if_to_id_instruction_bus.valid;
     end
   end
 
@@ -210,6 +217,10 @@ module id_stage (
     if (if_to_id_instruction_bus.valid && id_allow_in) begin
       from_if_data <= if_to_id_instruction_bus;
     end
+  end
+
+  always_ff @(posedge clock) begin
+    in_delay_slot <= is_jump_operation;
   end
 
   assign operation_code = id_instruction[31:26];
@@ -244,6 +255,7 @@ module id_stage (
   assign instruction_bne = operation_code_decoded[6'h05];
   assign instruction_div = operation_code_decoded[6'h00] & function_code_decoded[6'h1a] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_divu = operation_code_decoded[6'h00] & function_code_decoded[6'h1b] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_eret = operation_code_decoded[6'h10] & function_code[6'h18] & source_register_decoded[5'h10] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_j = operation_code_decoded[6'h02];
   assign instruction_jal = operation_code_decoded[6'h03];
   assign instruction_jalr = operation_code_decoded[6'h00] & function_code_decoded[6'h09] & multi_use_register_decoded[5'h00] & shift_amount_decoded[5'h00];
@@ -284,6 +296,7 @@ module id_stage (
   assign instruction_sw = operation_code_decoded[6'h2b];
   assign instruction_swl = operation_code_decoded[6'h2a];
   assign instruction_swr = operation_code_decoded[6'h2e];
+  assign instruction_syscall = operation_code_decoded[6'h00] & function_code_decoded[6'h0c];
   assign instruction_xor = operation_code_decoded[6'h00] & function_code_decoded[6'h26] & shift_amount_decoded[5'h00];
   assign instruction_xori = operation_code_decoded[6'h0e];
 
@@ -447,9 +460,4 @@ module id_stage (
     (instruction_beq || instruction_bgez || instruction_bgezal || instruction_bgtz || instruction_blez || instruction_bltz || instruction_bltzal || instruction_bne) ?
       (if_to_id_instruction_bus.program_count + {{14{immediate[15]}}, immediate[15:0], 2'b0}) :
     (instruction_jalr || instruction_jr) ? source_register_post_value : {if_to_id_instruction_bus.program_count[31:28], jump_address[25:0], 2'b0};
-
-  assign mtc0 = instruction_mtc0;
-  assign mfc0 = instruction_mfc0;
-  assign move_register_address = multi_use_register;
-
 endmodule : id_stage

@@ -4,6 +4,7 @@ module coprocessor0 (
   input clock,
   input reset,
   input coprocessor0_params::WBToCP0Data wb_to_cp0_data_bus,
+  output coprocessor0_params::CP0ToIFData cp0_to_if_data_bus,
   output cpu_core_params::CpuData cp0_read_data
 );
   import coprocessor0_params::*;

@@ -10,6 +10,8 @@ module ex_stage (
   input id_stage_params::IDToEXDecodeBusData id_to_ex_decode_bus,
   // backpass data
   output ex_stage_params::EXToIDBackPassData ex_to_id_back_pass_bus,
+  // exception data
+  input wb_stage_params::WBExceptionBus wb_exception_bus,
   // to io data
   output ex_stage_params::EXToIOData ex_to_io_bus,
   // data sram interface
@@ -37,6 +39,7 @@ module ex_stage (
   CpuData divide_remain;
 
   wire result_is_from_memory;
+  reg exception_valid;
 
   assign result_is_from_memory = from_id_data.is_load_operation;
   assign ex_to_io_bus = '{
@@ -44,7 +47,10 @@ module ex_stage (
     program_count: ex_program_count,
     alu_result: alu_result,
     source_register_data: from_id_data.source_register_value,
+    multi_use_register_data: from_id_data.multi_use_register_value,
     destination_register: from_id_data.destination_register,
+    multi_use_register: from_id_data.multi_use_register,
+    address_select: from_id_data.address_select,
     register_write: from_id_data.register_write,
     memory_address_final: alu_result[1:0],
     is_load_left: from_id_data.memory_io_type[3],
@@ -61,7 +67,13 @@ module ex_stage (
     divide_remain: divide_remain,
     result_high: from_id_data.result_high,
     result_low: from_id_data.result_low,
-    high_low_write: from_id_data.high_low_write
+    high_low_write: from_id_data.high_low_write,
+    move_from_cp0: from_id_data.move_from_cp0,
+    move_to_cp0: from_id_data.move_to_cp0,
+    exception_valid: from_id_data.exception_valid,
+    in_delay_slot: from_id_data.in_delay_slot,
+    eret_flush: from_id_data.eret_flush,
+    exception_code: from_id_data.exception_code
   };
 
   wire [4:0] backpass_address;
@@ -80,13 +92,23 @@ module ex_stage (
     if (reset) begin
       ex_valid <= 1'b0;
     end else if (ex_allow_in) begin
-      ex_valid <= id_to_ex_decode_bus.valid;
+      ex_valid <= (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) ? 1'b0 : id_to_ex_decode_bus.valid;
     end
   end
 
   always_ff @(posedge clock) begin
     if (id_to_ex_decode_bus.valid && ex_allow_in) begin
       from_id_data <= id_to_ex_decode_bus;
+    end
+  end
+
+  always_ff @(posedge clock) begin
+    if (reset) begin
+      exception_valid <= 1'b0;
+    end else if (id_to_ex_decode_bus.exception_valid) begin
+      exception_valid <= 1'b1;
+    end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
+      exception_valid <= 1'b0;
     end
   end
 
@@ -104,7 +126,7 @@ module ex_stage (
     .alu_output(alu_result)
   );
 
-  assign data_ram_enabled = 1'b1;
+  assign data_ram_enabled = !exception_valid;
   assign data_ram_write_enabled = from_id_data.memory_write && ex_valid ? (
     ({4{from_id_data.memory_io_type[4]}} & 4'b1111) |
     ({4{from_id_data.memory_io_type[3]}} & (

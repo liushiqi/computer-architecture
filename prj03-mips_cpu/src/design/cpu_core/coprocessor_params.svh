@@ -7,13 +7,17 @@ package coprocessor0_params;
   export cpu_core_params::CPU_DATA_WIDTH;
 
   typedef struct packed {
+    AddressData exception_pc;
+  } CP0ToIFData;
+
+  typedef struct packed {
     logic [4:0] address_register;
     logic [2:0] address_select;
     logic write_enabled;
     CpuData write_data;
     logic exception_valid;
-    CpuData exception_address;
-    logic eret_flish;
+    AddressData exception_address;
+    logic eret_flush;
     logic in_delay_slot;
     logic [4:0] exception_code;
   } WBToCP0Data;

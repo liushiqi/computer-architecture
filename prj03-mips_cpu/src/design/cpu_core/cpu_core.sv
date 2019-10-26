@@ -1,4 +1,5 @@
 `include "cpu_params.svh"
+`include "coprocessor_params.svh"
 
 module cpu_core (
   input clock,
@@ -43,6 +44,7 @@ module cpu_core (
   wb_stage_params::WBToRegisterFileData wb_to_register_file_bus;
   wb_stage_params::WBToIDBackPassData wb_to_id_back_pass_bus;
 
+  coprocessor0_params::CP0ToIFData cp0_to_if_data_bus;
   coprocessor0_params::WBToCP0Data wb_to_cp0_data_bus;
   CpuData cp0_read_data;
 
@@ -134,18 +136,20 @@ module cpu_core (
     .wb_to_id_back_pass_bus,
     // to register file: for write back
     .wb_to_register_file_bus,
+    // to cp0 write data
+    .wb_to_cp0_data_bus,
     // trace debug interface
     .debug_program_count,
     .debug_register_file_write_enabled,
     .debug_register_file_write_address,
-    .debug_register_file_write_data,
-    .wb_to_cp0_data_bus
+    .debug_register_file_write_data
   );
 
   coprocessor0 u_coprocessor0(
     .clock,
     .reset,
     .wb_to_cp0_data_bus,
+    .cp0_to_if_data_bus,
     .cp0_read_data
   );
 endmodule : cpu_core

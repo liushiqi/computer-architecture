@@ -35,6 +35,8 @@ package id_stage_params;
     CpuData source_register_value;
     logic [15:0] immediate;
     logic [4:0] destination_register;
+    logic [4:0] multi_use_register;
+    logic [2:0] address_select;
     logic memory_write;
     logic [4:0] memory_io_type;
     logic memory_io_unsigned;
@@ -52,9 +54,12 @@ package id_stage_params;
     logic result_low;
     logic high_low_write;
     logic [11:0] alu_operation;
-    logic [4:0] move_register_address;
-    logic mfc0;
-    logic mtc0;
+    logic move_from_cp0;
+    logic move_to_cp0;
+    logic exception_valid;
+    logic in_delay_slot;
+    logic eret_flush;
+    logic [4:0] exception_code;
   } IDToEXDecodeBusData;
 
   typedef struct packed {
@@ -106,7 +111,10 @@ package ex_stage_params;
     ProgramCount program_count;
     CpuData alu_result;
     CpuData source_register_data;
+    CpuData multi_use_register_data;
     logic [4:0] destination_register;
+    logic [4:0] multi_use_register;
+    logic [2:0] address_select;
     logic register_write;
     logic [1:0] memory_address_final;
     logic is_load_left;
@@ -124,6 +132,12 @@ package ex_stage_params;
     logic result_high;
     logic result_low;
     logic high_low_write;
+    logic move_from_cp0;
+    logic move_to_cp0;
+    logic exception_valid;
+    logic in_delay_slot;
+    logic eret_flush;
+    logic [4:0] exception_code;
   } EXToIOData;
 endpackage : ex_stage_params
 
@@ -150,6 +164,14 @@ package io_stage_params;
     logic [4:0] register_file_address;
     logic register_file_write_enabled;
     logic [3:0] register_file_write_strobe;
+    logic [4:0] cp0_address_register;
+    logic [2:0] cp0_address_select;
+    logic move_from_cp0;
+    logic move_to_cp0;
+    logic exception_valid;
+    logic in_delay_slot;
+    logic eret_flush;
+    logic [4:0] exception_code;
   } IOToWBData;
 endpackage : io_stage_params
 
@@ -171,6 +193,11 @@ package wb_stage_params;
     logic [3:0] write_strobe;
     CpuData write_data;
   } WBToRegisterFileData;
+
+  typedef struct packed {
+    logic exception_valid;
+    logic eret_flush;
+  } WBExceptionBus;
 endpackage : wb_stage_params
 
 package selector_params;

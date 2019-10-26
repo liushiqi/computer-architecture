@@ -1,4 +1,5 @@
 `include "cpu_params.svh"
+`include "coprocessor_params.svh"
 
 module if_stage (
   input clock,
@@ -9,6 +10,9 @@ module if_stage (
   input id_stage_params::IDToIFBranchBusData id_to_if_branch_bus,
   // to id
   output if_stage_params::IFToIDInstructionBusData if_to_id_instruction_bus,
+  // exception data
+  input wb_stage_params::WBExceptionBus wb_exception_bus,
+  input coprocessor0_params::CP0ToIFData cp0_to_if_data_bus,
   // instruction sram interface
   output instruction_ram_enabled,
   output [3:0] instruction_ram_write_strobe,
@@ -37,7 +41,10 @@ module if_stage (
   // pre-if stage
   assign to_if_valid = ~reset;
   assign sequence_program_count = if_program_count + 3'h4;
-  assign next_program_count = id_to_if_branch_bus.taken ? id_to_if_branch_bus.target : sequence_program_count;
+  assign next_program_count =
+    id_to_if_branch_bus.taken ? id_to_if_branch_bus.target :
+    wb_exception_bus.exception_valid ? 32'hbfc00380 :
+    wb_exception_bus.eret_flush ? cp0_to_if_data_bus.exception_address : sequence_program_count;
 
   // if stage
   assign if_ready_go = 1'b1;
