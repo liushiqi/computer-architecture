@@ -185,7 +185,7 @@ if {${command} == "open"} {
   set_property target_simulator "XSim" [current_project]
   set_property xsim.view ${wave_config_file} [get_filesets sim_1]
   launch_simulation -mode behavioral
-  run -all
+  #run -all
   start_gui
 } elseif {${command} == "bitstream" || ${command} == "implementation"} {
   generate_bitstream

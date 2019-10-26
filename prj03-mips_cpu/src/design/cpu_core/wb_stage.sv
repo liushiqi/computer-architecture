@@ -25,6 +25,8 @@ module wb_stage (
   import wb_stage_params::*;
   reg wb_valid;
   wire wb_ready_go;
+  reg exception_valid;
+  reg eret_flush;
 
   io_stage_params::IOToWBData from_io_data; // reg
   ProgramCount wb_program_count;
@@ -60,6 +62,11 @@ module wb_stage (
     write_data: register_file_write_data
   };
 
+  assign wb_exception_bus = '{
+    exception_valid: exception_valid,
+    eret_flush: eret_flush
+  };
+
   assign wb_ready_go = 1'b1;
   assign wb_allow_in = !wb_valid || wb_ready_go;
   always_ff @(posedge clock) begin
@@ -73,6 +80,22 @@ module wb_stage (
   always_ff @(posedge clock) begin
     if (io_to_wb_bus.valid && wb_allow_in) begin
       from_io_data <= io_to_wb_bus;
+    end
+  end
+
+  always_ff @(posedge clock) begin
+    if (reset) begin
+      exception_valid <= 1'b0;
+    end else if (from_io_data.exception_valid) begin
+      exception_valid <= 1'b1;
+    end
+  end
+
+  always_ff @(posedge clock) begin
+    if (reset) begin
+      eret_flush <= 1'b0;
+    end else if (from_io_data.eret_flush) begin
+      eret_flush <= 1'b1;
     end
   end
 
