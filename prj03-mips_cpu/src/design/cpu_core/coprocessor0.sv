@@ -125,4 +125,4 @@ module coprocessor0 (
   assign cp0_to_if_data_bus = '{
     exception_address: epc_value
   };
-endmodule;
+endmodule : coprocessor0

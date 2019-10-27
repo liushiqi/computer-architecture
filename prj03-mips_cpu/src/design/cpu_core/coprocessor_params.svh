@@ -44,6 +44,6 @@ package coprocessor0_params;
   } CauseData;
 
   typedef Address EPCData;
-endpackage;
+endpackage : coprocessor0_params
 
 `endif
