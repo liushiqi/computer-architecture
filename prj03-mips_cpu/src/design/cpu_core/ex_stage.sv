@@ -95,7 +95,7 @@ module ex_stage (
     end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
       ex_valid <= 1'b0;
     end else if (ex_allow_in) begin
-      ex_valid <= (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) ? 1'b0 : id_to_ex_decode_bus.valid;
+      ex_valid <= id_to_ex_decode_bus.valid;
     end
   end
 
