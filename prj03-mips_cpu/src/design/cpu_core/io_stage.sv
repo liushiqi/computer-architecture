@@ -15,7 +15,7 @@ module io_state (
   // exception data
   input wb_stage_params::WBExceptionBus wb_exception_bus,
   output wire io_have_exception_forwards,
-  output wire io_have_exception_backwards,
+  input wire io_have_exception_backwards,
   // from data sram
   input cpu_core_params::CpuData data_ram_read_data
 );
