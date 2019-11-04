@@ -1,6 +1,8 @@
 `ifndef COPROCESSOR_PARAMS
 `define COPROCESSOR_PARAMS
 
+`include "cpu_params.svh"
+
 package coprocessor0_params;
   import cpu_core_params::*;
   export cpu_core_params::CpuData;
