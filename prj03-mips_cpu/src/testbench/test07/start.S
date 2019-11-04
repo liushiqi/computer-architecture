@@ -6,7 +6,7 @@
 #define lab6  1
 #define lab7  1
 #define lab8  1
-#define lab9  0
+#define lab9  1
 
 #define TEST_NUM (lab3*23 + lab6*19 + lab7*26 + lab8*1 + lab9*25)
 

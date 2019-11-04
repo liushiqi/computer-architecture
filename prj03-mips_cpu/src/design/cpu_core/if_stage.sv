@@ -13,6 +13,7 @@ module if_stage (
   // exception data
   input wb_stage_params::WBExceptionBus wb_exception_bus,
   input coprocessor0_params::CP0ToIFData cp0_to_if_data_bus,
+  input wire if_have_exception_backwards,
   // instruction sram interface
   output instruction_ram_enabled,
   output [3:0] instruction_ram_write_strobe,
@@ -27,6 +28,12 @@ module if_stage (
   wire to_if_valid;
   wire if_to_id_valid;
 
+  wire if_have_exception;
+  wire should_flush;
+  wire address_exception;
+  wire interrupt;
+  wire [5:0] exception_code;
+
   ProgramCount sequence_program_count;
   ProgramCount next_program_count;
 
@@ -35,7 +42,11 @@ module if_stage (
   assign if_to_id_instruction_bus = '{
     valid: if_to_id_valid,
     program_count: if_program_count,
-    instruction: if_instruction
+    instruction: if_instruction,
+    exception_valid: !if_have_exception_backwards && if_have_exception,
+    exception_code: exception_code,
+    is_address_fault: address_exception,
+    badvaddr_value: {32{address_exception}} & if_program_count
   };
 
   // pre-if stage
@@ -66,7 +77,13 @@ module if_stage (
     end
   end
 
-  assign instruction_ram_enabled = to_if_valid && if_allow_in;
+  assign address_exception = if_program_count[1:0] != 2'b00;
+  assign interrupt = |cp0_to_if_data_bus.interrupt_valid;
+  assign if_have_exception = address_exception | interrupt;
+  assign exception_code = interrupt ? 5'h00 : address_exception ? 5'h04 : 5'h00;
+  assign should_flush = if_have_exception_backwards || if_have_exception;
+
+  assign instruction_ram_enabled = to_if_valid && if_allow_in && !(!wb_exception_bus.exception_valid && !wb_exception_bus.eret_flush && should_flush);
   assign instruction_ram_write_strobe = 4'h0;
   assign instruction_ram_address = next_program_count;
   assign instruction_ram_write_data = 32'b0;

@@ -17,6 +17,7 @@ module wb_stage (
   input cpu_core_params::CpuData cp0_read_data,
   // exception data
   output wb_stage_params::WBExceptionBus wb_exception_bus,
+  output wire wb_have_exception_forwards,
   // trace debug interface
   output cpu_core_params::ProgramCount debug_program_count,
   output [3:0] debug_register_file_write_enabled,
@@ -47,11 +48,13 @@ module wb_stage (
     address_select: from_io_data.cp0_address_select,
     write_enabled: wb_valid && from_io_data.move_to_cp0,
     write_data: from_io_data.final_result,
-    exception_valid: from_io_data.exception_valid,
+    exception_valid: wb_valid && from_io_data.exception_valid,
     exception_address: wb_program_count,
-    eret_flush: from_io_data.eret_flush,
+    eret_flush: wb_valid && from_io_data.eret_flush,
     in_delay_slot: from_io_data.in_delay_slot,
-    exception_code: from_io_data.exception_code
+    exception_code: from_io_data.exception_code,
+    is_address_fault: from_io_data.is_address_fault,
+    badvaddr_value: from_io_data.badvaddr_value
   };
 
   assign wb_to_id_back_pass_bus = '{
@@ -71,7 +74,7 @@ module wb_stage (
   always_ff @(posedge clock) begin
     if (reset) begin
       wb_valid <= 1'b0;
-    end else if (from_io_data.exception_valid || from_io_data.eret_flush) begin
+    end else if (wb_valid && (from_io_data.exception_valid || from_io_data.eret_flush)) begin
       wb_valid <= 1'b0;
     end else if (wb_allow_in) begin
       wb_valid <= io_to_wb_bus.valid;
@@ -83,6 +86,8 @@ module wb_stage (
       from_io_data <= io_to_wb_bus;
     end
   end
+
+  assign wb_have_exception_forwards = (from_io_data.exception_valid || from_io_data.eret_flush) && wb_valid;
 
   assign register_file_write_enabled = from_io_data.register_file_write_enabled && !from_io_data.exception_valid && wb_valid;
   assign register_file_write_strobe = from_io_data.register_file_write_strobe;

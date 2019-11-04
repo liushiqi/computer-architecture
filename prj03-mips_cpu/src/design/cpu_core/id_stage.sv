@@ -19,7 +19,9 @@ module id_stage (
   // to register file: for write back stage
   input wb_stage_params::WBToRegisterFileData wb_to_register_file_bus,
   // exception data
-  input wb_stage_params::WBExceptionBus wb_exception_bus
+  input wb_stage_params::WBExceptionBus wb_exception_bus,
+  output wire id_have_exception_forwards,
+  input wire id_have_exception_backwards
 );
   import id_stage_params::*;
   reg id_valid;
@@ -63,8 +65,12 @@ module id_stage (
   wire [31:0] source_register_post_value;
   wire [31:0] multi_use_register_post_value;
   wire multi_use_register_is_used;
+
   reg in_delay_slot;
-  reg should_flush;
+  wire id_have_exception;
+  wire reserved_instruction;
+  wire do_overflow_check;
+  wire [4:0] exception_code;
 
   wire [5:0] operation_code;
   wire [4:0] source_register;
@@ -94,6 +100,7 @@ module id_stage (
   wire instruction_bltz;
   wire instruction_bltzal;
   wire instruction_bne;
+  wire instruction_break;
   wire instruction_div;
   wire instruction_divu;
   wire instruction_eret;
@@ -187,10 +194,13 @@ module id_stage (
     alu_operation: alu_operation,
     move_from_cp0: instruction_mfc0,
     move_to_cp0: instruction_mtc0,
-    exception_valid: instruction_syscall,
+    exception_valid: from_if_data.exception_valid || id_have_exception,
     in_delay_slot: in_delay_slot,
     eret_flush: instruction_eret,
-    exception_code: 5'h8
+    do_overflow_check: do_overflow_check,
+    exception_code: exception_code,
+    is_address_fault: from_if_data.is_address_fault,
+    badvaddr_value: from_if_data.badvaddr_value
   };
 
   wire [4:0] source_register_0_if_unused;
@@ -208,7 +218,7 @@ module id_stage (
       (io_to_id_back_pass_bus.write_register != 5'b0) &&
       (io_to_id_back_pass_bus.write_register == source_register_0_if_unused ||
         io_to_id_back_pass_bus.write_register == multi_use_register_0_if_unused));
-  assign id_ready_go = should_flush || ~id_should_be_blocked;
+  assign id_ready_go = id_have_exception_backwards || ~id_should_be_blocked;
   assign id_allow_in = !id_valid || (id_ready_go && ex_allow_in);
   assign id_to_ex_valid = id_valid && id_ready_go;
   always_ff @(posedge clock) begin
@@ -228,18 +238,19 @@ module id_stage (
   end
 
   always_ff @(posedge clock) begin
-    if (reset) begin
-      should_flush <= 1'b0;
-    end else if (id_valid && (instruction_syscall || instruction_eret)) begin
-      should_flush <= 1'b1;
-    end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
-      should_flush <= 1'b0;
-    end
-  end
-
-  always_ff @(posedge clock) begin
     in_delay_slot <= is_jump_operation;
   end
+
+  assign id_have_exception_forwards = (from_if_data.exception_valid || id_have_exception || instruction_eret) && id_valid;
+  assign reserved_instruction = 
+    ~(instruction_add | instruction_addi | instruction_addiu | instruction_addu | instruction_and | instruction_andi | instruction_beq | instruction_bgez | instruction_bgezal | instruction_bgtz | instruction_blez |
+      instruction_bltz | instruction_bltzal | instruction_bne | instruction_break | instruction_div | instruction_divu | instruction_eret | instruction_j | instruction_jal | instruction_jalr | instruction_jr |
+      instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lui | instruction_lw | instruction_lwl | instruction_lwr | instruction_mfc0 | instruction_mfhi | instruction_mflo |
+      instruction_mtc0 | instruction_mthi | instruction_mtlo | instruction_mult | instruction_multu | instruction_nor | instruction_or | instruction_ori | instruction_sb | instruction_sh | instruction_sll |
+      instruction_sllv | instruction_slt | instruction_slti | instruction_sltiu | instruction_sltu | instruction_sra | instruction_srav | instruction_srl | instruction_srlv | instruction_sub | instruction_subu |
+      instruction_sw | instruction_swl | instruction_swr | instruction_syscall | instruction_xor | instruction_xori);
+  assign id_have_exception = reserved_instruction | instruction_syscall | instruction_break;
+  assign exception_code = from_if_data.exception_valid ? from_if_data.exception_code : reserved_instruction ? 5'h0a : instruction_break ? 5'h09 : instruction_syscall ? 5'h8 : 5'h00;
 
   assign operation_code = id_instruction[31:26];
   assign source_register = id_instruction[25:21];
@@ -271,6 +282,7 @@ module id_stage (
   assign instruction_bltz = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h00];
   assign instruction_bltzal = operation_code_decoded[6'h01] & multi_use_register_decoded[6'h10];
   assign instruction_bne = operation_code_decoded[6'h05];
+  assign instruction_break = operation_code_decoded[6'h00] & function_code_decoded[6'h0d];
   assign instruction_div = operation_code_decoded[6'h00] & function_code_decoded[6'h1a] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_divu = operation_code_decoded[6'h00] & function_code_decoded[6'h1b] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_eret = operation_code_decoded[6'h10] & function_code_decoded[6'h18] & source_register_decoded[5'h10] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
@@ -344,12 +356,13 @@ module id_stage (
   assign high_low_write = instruction_mthi | instruction_mtlo;
   assign destination_is_register31 = instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr;
   assign detination_is_multi_use = instruction_addi | instruction_addiu | instruction_andi | instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lui | instruction_lw | | instruction_lwl | instruction_lwr | instruction_mfc0 | instruction_ori | instruction_slti | instruction_sltiu | instruction_xori;
-  assign register_write = ~instruction_beq & ~instruction_bgez & ~instruction_bgtz & ~instruction_blez & ~instruction_bltz & ~instruction_bne & ~instruction_div & ~instruction_divu & ~instruction_eret & ~instruction_j & ~instruction_jr & ~instruction_mtc0 & ~instruction_mthi & ~instruction_mtlo & ~instruction_mult & ~instruction_multu & ~instruction_sb & ~instruction_sh & ~instruction_sw & ~instruction_swl & ~instruction_swr & ~instruction_syscall;
+  assign register_write = ~instruction_beq & ~instruction_bgez & ~instruction_bgtz & ~instruction_blez & ~instruction_bltz & ~instruction_bne & ~instruction_break & ~instruction_div & ~instruction_divu & ~instruction_eret & ~instruction_j & ~instruction_jr & ~instruction_mtc0 & ~instruction_mthi & ~instruction_mtlo & ~instruction_mult & ~instruction_multu & ~instruction_sb & ~instruction_sh & ~instruction_sw & ~instruction_swl & ~instruction_swr & ~instruction_syscall;
   assign memory_write = instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
   assign memory_io_unsigned = instruction_lbu | instruction_lhu;
   assign is_load_operation = instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lw | instruction_lwl | instruction_lwr;
   assign is_jump_operation = instruction_beq | instruction_bgez | instruction_bgezal | instruction_bgtz | instruction_blez | instruction_bltz | instruction_bltzal | instruction_bne | instruction_j | instruction_jal | instruction_jalr | instruction_jr;
   assign multi_use_register_is_used = instruction_add | instruction_addu | instruction_and | instruction_beq | instruction_bne | instruction_div | instruction_divu | instruction_mult | instruction_multu | instruction_nor | instruction_or | instruction_sll | instruction_sllv | instruction_slt | instruction_sltu | instruction_sra | instruction_srav | instruction_srl | instruction_srlv | instruction_sub | instruction_subu | instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
+  assign do_overflow_check = instruction_add | instruction_addi | instruction_sub;
 
   assign memory_io_type[4] = instruction_lw | instruction_sw;
   assign memory_io_type[3] = instruction_lwl | instruction_swl;

@@ -2,7 +2,8 @@ module alu(
   input [11:0] alu_operation,
   input [31:0] alu_input_1,
   input [31:0] alu_input_2,
-  output [31:0] alu_output
+  output [31:0] alu_output,
+  output alu_overflow
 );
   wire operation_add;
   wire operation_sub;
@@ -52,9 +53,10 @@ module alu(
   wire adder_carry_out;
 
   assign adder_input_1 = alu_input_1;
-  assign adder_input_2 = (operation_sub | operation_slt | operation_sltu) ? ~alu_input_2:alu_input_2;
-  assign adder_carry_in = (operation_sub | operation_slt | operation_sltu) ? 1'b1:1'b0;
-  assign {adder_carry_out, adder_result} = adder_input_1+adder_input_2+adder_carry_in;
+  assign adder_input_2 = (operation_sub | operation_slt | operation_sltu) ? ~alu_input_2 : alu_input_2;
+  assign adder_carry_in = (operation_sub | operation_slt | operation_sltu) ? 1'b1 : 1'b0;
+  assign {adder_carry_out, adder_result} = adder_input_1 + adder_input_2 + adder_carry_in;
+  assign alu_overflow = (operation_add | operation_sub) & (adder_input_1[31] == adder_input_2[31] && adder_input_1[31] != adder_result[31]);
 
   // add, sub result
   assign add_sub_result = adder_result;

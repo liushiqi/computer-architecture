@@ -1,6 +1,8 @@
 `ifndef CPU_PARAMS
 `define CPU_PARAMS
 
+`include "coprocessor_params.svh"
+
 package cpu_core_params;
   parameter CPU_DATA_WIDTH = 32;
 
@@ -19,6 +21,10 @@ package if_stage_params;
     logic valid;
     ProgramCount program_count;
     CpuData instruction;
+    logic exception_valid;
+    logic [4:0] exception_code;
+    logic is_address_fault;
+    coprocessor0_params::BadVAddrData badvaddr_value;
   } IFToIDInstructionBusData;
 endpackage : if_stage_params
 
@@ -60,7 +66,10 @@ package id_stage_params;
     logic exception_valid;
     logic in_delay_slot;
     logic eret_flush;
+    logic do_overflow_check;
     logic [4:0] exception_code;
+    logic is_address_fault;
+    coprocessor0_params::BadVAddrData badvaddr_value;
   } IDToEXDecodeBusData;
 
   typedef struct packed {
@@ -118,9 +127,10 @@ package ex_stage_params;
     logic [4:0] multi_use_register;
     logic [2:0] address_select;
     logic register_write;
-    logic [1:0] memory_address_final;
+    Address memory_address;
     logic is_load_left;
     logic is_load_right;
+    logic is_load_word;
     logic is_load_half_word;
     logic is_load_byte;
     logic memory_io_unsigned;
@@ -140,6 +150,8 @@ package ex_stage_params;
     logic in_delay_slot;
     logic eret_flush;
     logic [4:0] exception_code;
+    logic is_address_fault;
+    coprocessor0_params::BadVAddrData badvaddr_value;
   } EXToIOData;
 endpackage : ex_stage_params
 
@@ -176,6 +188,8 @@ package io_stage_params;
     logic in_delay_slot;
     logic eret_flush;
     logic [4:0] exception_code;
+    logic is_address_fault;
+    coprocessor0_params::BadVAddrData badvaddr_value;
   } IOToWBData;
 endpackage : io_stage_params
 

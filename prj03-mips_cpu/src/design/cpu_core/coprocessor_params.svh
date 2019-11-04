@@ -8,6 +8,7 @@ package coprocessor0_params;
 
   typedef struct packed {
     Address exception_address;
+    logic [7:0] interrupt_valid;
   } CP0ToIFData;
 
   typedef struct packed {
@@ -20,7 +21,15 @@ package coprocessor0_params;
     logic eret_flush;
     logic in_delay_slot;
     logic [4:0] exception_code;
+    logic is_address_fault;
+    Address badvaddr_value;
   } WBToCP0Data;
+
+  typedef Address BadVAddrData;
+
+  typedef CpuData CountData;
+
+  typedef CpuData CompareData;
 
   typedef struct packed {
     logic [8:0] zero1;

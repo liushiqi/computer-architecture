@@ -49,6 +49,21 @@ module cpu_core (
   coprocessor0_params::WBToCP0Data wb_to_cp0_data_bus;
   CpuData cp0_read_data;
 
+  wire id_have_exception_forwards;
+  wire ex_have_exception_forwards;
+  wire io_have_exception_forwards;
+  wire wb_have_exception_forwards;
+
+  wire if_have_exception_backwards;
+  wire id_have_exception_backwards;
+  wire ex_have_exception_backwards;
+  wire io_have_exception_backwards;
+
+  assign if_have_exception_backwards = id_have_exception_forwards | ex_have_exception_forwards | io_have_exception_forwards;
+  assign id_have_exception_backwards = ex_have_exception_forwards | io_have_exception_forwards | wb_have_exception_forwards;
+  assign ex_have_exception_backwards = io_have_exception_forwards | wb_have_exception_forwards;
+  assign io_have_exception_backwards = wb_have_exception_forwards;
+
   // instruction fetch stage
   if_stage u_if_stage(
     .clock,
@@ -62,6 +77,7 @@ module cpu_core (
     // exception bus
     .wb_exception_bus,
     .cp0_to_if_data_bus,
+    .if_have_exception_backwards,
     // instruction sram interface
     .instruction_ram_enabled,
     .instruction_ram_write_strobe,
@@ -89,6 +105,8 @@ module cpu_core (
     .id_to_if_branch_bus,
     // exception bus
     .wb_exception_bus,
+    .id_have_exception_forwards,
+    .id_have_exception_backwards,
     //to rf: for write back
     .wb_to_register_file_bus
   );
@@ -108,6 +126,8 @@ module cpu_core (
     .ex_to_io_bus,
     // exception bus
     .wb_exception_bus,
+    .ex_have_exception_forwards,
+    .ex_have_exception_backwards,
     // data sram interface
     .data_ram_enabled,
     .data_ram_write_enabled,
@@ -128,6 +148,8 @@ module cpu_core (
     .io_to_id_back_pass_bus,
     // exception bus
     .wb_exception_bus,
+    .io_have_exception_forwards,
+    .io_have_exception_backwards,
     // to io data
     .io_to_wb_bus,
     // from data sram
@@ -151,6 +173,7 @@ module cpu_core (
     .cp0_read_data,
     // exception bus
     .wb_exception_bus,
+    .wb_have_exception_forwards,
     // trace debug interface
     .debug_program_count,
     .debug_register_file_write_enabled,
@@ -163,6 +186,7 @@ module cpu_core (
     .reset,
     .wb_to_cp0_data_bus,
     .cp0_to_if_data_bus,
-    .cp0_read_data
+    .cp0_read_data,
+    .hardware_interrupt(6'h00)
   );
 endmodule : cpu_core

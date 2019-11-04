@@ -5,7 +5,8 @@ module coprocessor0 (
   input reset,
   input coprocessor0_params::WBToCP0Data wb_to_cp0_data_bus,
   output coprocessor0_params::CP0ToIFData cp0_to_if_data_bus,
-  output cpu_core_params::CpuData cp0_read_data
+  output cpu_core_params::CpuData cp0_read_data,
+  input [5:0] hardware_interrupt
 );
   import coprocessor0_params::*;
   wire [31:0] address_register_decoded;
@@ -13,14 +14,53 @@ module coprocessor0 (
 
   decoder #(.INPUT_WIDTH(5)) u_address_register_decoder(.in(wb_to_cp0_data_bus.address_register), .out(address_register_decoded));
   decoder #(.INPUT_WIDTH(3)) u_address_select_decoder(.in(wb_to_cp0_data_bus.address_select), .out(address_select_decoded));
-  
+
+  wire address_badvaddr;
+  wire address_count;
+  wire address_compare;
   wire address_status;
   wire address_cause;
   wire address_epc;
 
+  assign address_badvaddr = address_register_decoded[5'h08] & address_select_decoded[3'h0];
+  assign address_count = address_register_decoded[5'h09] & address_select_decoded[3'h0];
+  assign address_compare = address_register_decoded[5'h0b] & address_select_decoded[3'h0];
   assign address_status = address_register_decoded[5'h0c] & address_select_decoded[3'h0];
   assign address_cause = address_register_decoded[5'h0d] & address_select_decoded[3'h0];
   assign address_epc = address_register_decoded[5'h0e] & address_select_decoded[3'h0];
+
+  BadVAddrData badvaddr_value;
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.exception_valid && wb_to_cp0_data_bus.is_address_fault) begin
+      badvaddr_value <= wb_to_cp0_data_bus.badvaddr_value;
+    end
+  end
+
+  CountData count_value;
+  reg tick;
+  always_ff @(posedge clock) begin
+    if (reset) begin
+      tick <= 1'b0;
+    end else if (wb_to_cp0_data_bus.write_enabled && address_count) begin
+      tick <= 1'b0;
+    end else begin
+      tick <= ~tick;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_count) begin
+      count_value <= wb_to_cp0_data_bus.write_data;
+    end else if (tick) begin
+      count_value <= count_value + 1'b1;
+    end
+  end
+
+  CompareData compare_value;
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_compare) begin
+      compare_value <= wb_to_cp0_data_bus.write_data;
+    end
+  end
 
   StatusData status_value;
   StatusData status_write_value;
@@ -82,18 +122,24 @@ module coprocessor0 (
   always_ff @(posedge clock) begin
     if (reset) begin
       cause_in_delay_slot <= 1'b0;
-    end else if (wb_to_cp0_data_bus.exception_valid && status_value.exception_level) begin
+    end else if (wb_to_cp0_data_bus.exception_valid && !status_value.exception_level) begin
       cause_in_delay_slot <= wb_to_cp0_data_bus.in_delay_slot;
     end
   end
   always_ff @(posedge clock) begin
     if (reset) begin
       cause_timer_interrupt <= 1'b0;
+    end else if (wb_to_cp0_data_bus.write_enabled && address_compare) begin
+      cause_timer_interrupt <= 1'b0;
+    end else if (count_value == compare_value) begin
+      cause_timer_interrupt <= 1'b1;
     end
   end
   always_ff @(posedge clock) begin
     if (reset) begin
       cause_hardware_interrupt <= 6'b0;
+    end else begin
+      cause_hardware_interrupt <= {hardware_interrupt[5] | cause_timer_interrupt, hardware_interrupt[4:0]};
     end
   end
   always_ff @(posedge clock) begin
@@ -119,10 +165,14 @@ module coprocessor0 (
   end
 
   assign cp0_read_data =
+    ({CPU_DATA_WIDTH{address_badvaddr}} & CpuData'(badvaddr_value)) |
+    ({CPU_DATA_WIDTH{address_count}} & CpuData'(count_value)) |
+    ({CPU_DATA_WIDTH{address_compare}} & CpuData'(compare_value)) |
     ({CPU_DATA_WIDTH{address_status}} & CpuData'(status_value)) |
     ({CPU_DATA_WIDTH{address_cause}} & CpuData'(cause_value)) |
     ({CPU_DATA_WIDTH{address_epc}} & CpuData'(epc_value));
   assign cp0_to_if_data_bus = '{
-    exception_address: epc_value
+    exception_address: epc_value,
+    interrupt_valid : {cause_value.hardware_interrupt, cause_value.software_interrupt} & status_value.interrupt_mask & {8{status_value.interrupt_enabled}} & {8{~status_value.exception_level}}
   };
 endmodule : coprocessor0
