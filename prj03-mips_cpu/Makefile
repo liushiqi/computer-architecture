@@ -1,9 +1,13 @@
 PARAMS := ""
-TESTBENCH = 6
-
+TESTBENCH = 7
+MEMORY_GAME = 0
 
 TESTBENCH_BASE_DIR = src/testbench
-TESTBENCH_DIR := "${TESTBENCH_BASE_DIR}/test$(shell printf "%02d" ${TESTBENCH})"
+ifeq (${MEMORY_GAME}, 0)
+	TESTBENCH_DIR := "${TESTBENCH_BASE_DIR}/test$(shell printf "%02d" ${TESTBENCH})"
+else
+	TESTBENCH_DIR := "${TESTBENCH_BASE_DIR}/memory_game"
+endif
 
 all: open
 
@@ -29,7 +33,7 @@ board:
 
 testbench:
 	make -C ${TESTBENCH_DIR} clean
-	make -C ${TESTBENCH_DIR} compile
+	make -C ${TESTBENCH_DIR} all
 	mkdir -p sim
 	cp ${TESTBENCH_DIR}/obj/data_ram.coe sim
 	cp ${TESTBENCH_DIR}/obj/inst_ram.coe sim
