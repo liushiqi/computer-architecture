@@ -31,18 +31,22 @@ board:
 	mkdir -p log
 	./run.sh board ${PARAMS} | tee log/board.log
 
+sim/axi_ram.coe:
+	testbench
+
 testbench:
 	make -C ${TESTBENCH_DIR} clean
 	make -C ${TESTBENCH_DIR} all
 	mkdir -p sim
 	cp ${TESTBENCH_DIR}/obj/data_ram.coe sim
 	cp ${TESTBENCH_DIR}/obj/inst_ram.coe sim
+	cp ${TESTBENCH_DIR}/obj/inst_ram.coe sim/axi_ram.coe
 	cp ${TESTBENCH_DIR}/obj/test.s sim
 	rm -rf project trace_project
 
 trace: sim/trace.txt
 
-sim/trace.txt: sim/data_ram.coe sim/inst_ram.coe
+sim/trace.txt: sim/axi_ram.coe
 	vivado -nojournal -nolog -mode batch -source "$(shell pwd)/scripts/trace.tcl" -notrace -tclarg simulation | tee log/trace.log
 
 clean:

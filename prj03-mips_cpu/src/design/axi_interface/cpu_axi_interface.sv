@@ -2,20 +2,16 @@ package axi_params;
   typedef logic [31:0] AXIData;
 
   typedef enum logic [31:0] {
-    READ_DATA_WAITING,
+    READ_WAITING,
     READ_WAITING_DATA_RAM_ADDRESS,
     READ_SENDING_DATA_RAM_ADDRESS,
     READ_WAITING_DATA_RAM_DATA,
-    READ_SENDING_DATA_RAM_DATA
-  } ReadDataState;
-  
-  typedef enum logic [31:0] {
-    READ_INSTRUCTION_WAITING,
+    READ_SENDING_DATA_RAM_DATA,
     READ_WAITING_INSTRUCTION_RAM_ADDRESS,
     READ_SENDING_INSTRUCTION_RAM_ADDRESS,
     READ_WAITING_INSTRUCTION_RAM_DATA,
     READ_SENDING_INSTRUCTION_RAM_DATA
-  } ReadInstructionState;
+  } ReadState;
 
   typedef enum logic [31:0] {
     WRITE_WAITING,
@@ -39,6 +35,7 @@ module cpu_axi_interface (
   output axi_params::AXIData instruction_ram_read_data,
   output instruction_ram_address_ready,
   output instruction_ram_data_ready,
+
   input data_ram_request,
   input data_ram_write,
   input [1:0] data_ram_size,
@@ -47,6 +44,7 @@ module cpu_axi_interface (
   output axi_params::AXIData data_ram_read_data,
   output data_ram_address_ready,
   output data_ram_data_ready,
+
   output [3:0] axi_read_address_id,
   output axi_params::AXIData axi_read_address,
   output [7:0] axi_read_address_length,
@@ -57,12 +55,14 @@ module cpu_axi_interface (
   output [2:0] axi_read_address_protection,
   output axi_read_address_valid,
   input axi_read_address_ready,
+
   input [3:0] axi_read_data_id,
   input axi_params::AXIData axi_read_data,
   input [1:0] axi_read_data_response,
   input axi_read_data_last,
   input axi_read_data_valid,
   output axi_read_data_ready,
+
   output [3:0] axi_write_address_id,
   output axi_params::AXIData axi_write_address,
   output [7:0] axi_write_address_length,
@@ -73,12 +73,14 @@ module cpu_axi_interface (
   output [2:0] axi_write_address_protection,
   output axi_write_address_valid,
   input axi_write_address_ready,
+
   output [3:0] axi_write_data_id,
   output axi_params::AXIData axi_write_data,
   output [3:0] axi_write_data_strobe,
   output axi_write_data_last,
   output axi_write_data_valid,
   input axi_write_data_ready,
+
   input [3:0] axi_write_responce_id,
   input [1:0] axi_write_responce,
   input axi_write_responce_valid,
@@ -88,124 +90,90 @@ module cpu_axi_interface (
   wire reset;
   assign reset = ~reset_;
   // state
-  ReadDataState read_data_state;
-  ReadDataState next_read_data_state;
-  ReadInstructionState read_instruction_state;
-  ReadInstructionState next_read_instruction_state;
+  ReadState read_state;
+  ReadState next_read_state;
   WriteState write_state;
   WriteState next_write_state;
   wire have_pending_write = write_state != WRITE_WAITING || next_write_state != WRITE_WAITING;
 
   // cpu
   assign data_ram_read_data = axi_read_data;
-  assign data_ram_address_ready = (axi_read_address_ready && read_data_state == READ_SENDING_DATA_RAM_ADDRESS) || (axi_write_address_ready && write_state == WRITE_SENDING_DATA_RAM_ADDRESS);
-  assign data_ram_data_ready = (axi_read_data_valid && read_data_state == READ_SENDING_DATA_RAM_DATA) || (axi_write_responce_valid && write_state == WRITE_SENDING_DATA_RAM_APPLY);
+  assign data_ram_address_ready = read_state == READ_SENDING_DATA_RAM_ADDRESS | write_state == WRITE_SENDING_DATA_RAM_ADDRESS;
+  assign data_ram_data_ready = read_state == READ_SENDING_DATA_RAM_DATA | write_state == WRITE_SENDING_DATA_RAM_APPLY;
   assign instruction_ram_read_data = axi_read_data;
-  assign instruction_ram_address_ready = axi_read_address_ready && read_instruction_state == READ_SENDING_INSTRUCTION_RAM_ADDRESS;
-  assign instruction_ram_data_ready = axi_read_data_valid && read_instruction_state == READ_SENDING_INSTRUCTION_RAM_DATA;
+  assign instruction_ram_address_ready = read_state == READ_SENDING_INSTRUCTION_RAM_ADDRESS;
+  assign instruction_ram_data_ready = read_state == READ_SENDING_INSTRUCTION_RAM_DATA;
 
   // read
-  assign axi_read_address_id = read_data_state == READ_SENDING_DATA_RAM_ADDRESS ? 4'b1 : 4'b0;
-  assign axi_read_address = read_data_state == READ_SENDING_DATA_RAM_ADDRESS ? data_ram_address : instruction_ram_address;
+  assign axi_read_address_id = read_state == READ_WAITING_DATA_RAM_ADDRESS | read_state == READ_SENDING_DATA_RAM_ADDRESS ? 4'b1 : 4'b0;
+  assign axi_read_address = read_state == READ_WAITING_DATA_RAM_ADDRESS | read_state == READ_SENDING_DATA_RAM_ADDRESS ? data_ram_address : instruction_ram_address;
   assign axi_read_address_length = 8'b0;
-  assign axi_read_address_size = read_data_state == READ_SENDING_DATA_RAM_ADDRESS ? data_ram_size : instruction_ram_size;
+  assign axi_read_address_size = read_state == READ_WAITING_DATA_RAM_ADDRESS | read_state == READ_SENDING_DATA_RAM_ADDRESS ? data_ram_size : instruction_ram_size;
   assign axi_read_address_burst = 2'b1;
   assign axi_read_address_lock = 2'b0;
   assign axi_read_address_cache = 4'b0;
   assign axi_read_address_protection = 3'b0;
-  assign axi_read_address_valid = read_data_state == READ_SENDING_DATA_RAM_ADDRESS | read_instruction_state == READ_SENDING_INSTRUCTION_RAM_ADDRESS;
+  assign axi_read_address_valid = read_state == READ_SENDING_DATA_RAM_ADDRESS | read_state == READ_SENDING_INSTRUCTION_RAM_ADDRESS;
 
-  assign axi_read_data_ready = read_data_state == READ_SENDING_DATA_RAM_DATA | read_instruction_state == READ_SENDING_INSTRUCTION_RAM_DATA;
-
-  always_ff @(posedge clock) begin
-    if (reset) begin
-      read_data_state <= READ_DATA_WAITING;
-    end else begin
-      read_data_state <= next_read_data_state;
-    end
-  end
+  assign axi_read_data_ready = read_state == READ_SENDING_DATA_RAM_DATA | read_state == READ_SENDING_INSTRUCTION_RAM_DATA;
 
   always_ff @(posedge clock) begin
     if (reset) begin
-      read_instruction_state <= READ_INSTRUCTION_WAITING;
+      read_state <= READ_WAITING;
     end else begin
-      read_instruction_state <= next_read_instruction_state;
+      read_state <= next_read_state;
     end
   end
 
-  always_comb case(read_data_state)
-    READ_DATA_WAITING: begin
-      if (data_ram_request && ~data_ram_write && ~have_pending_write) begin
-        next_read_data_state = read_data_state.next;
+  always_comb case(read_state)
+    READ_WAITING: begin
+      if (data_ram_request & ~data_ram_write & ~have_pending_write) begin
+        next_read_state = READ_WAITING_DATA_RAM_ADDRESS;
+      end else if (instruction_ram_request & ~instruction_ram_write & ~have_pending_write) begin
+        next_read_state = READ_WAITING_INSTRUCTION_RAM_ADDRESS;
       end else begin
-        next_read_data_state = read_data_state;
+        next_read_state = read_state;
       end
     end
     READ_WAITING_DATA_RAM_ADDRESS: begin
       if (axi_read_address_ready) begin
-        next_read_data_state = read_data_state.next;
+        next_read_state = read_state.next;
       end else begin
-        next_read_data_state = read_data_state;
+        next_read_state = read_state;
       end
     end
     READ_SENDING_DATA_RAM_ADDRESS: begin
-      if (axi_read_address_ready) begin
-        next_read_data_state = read_data_state.next;
-      end else begin
-        next_read_data_state = read_data_state;
-      end
+      next_read_state = read_state.next;
     end
     READ_WAITING_DATA_RAM_DATA : begin
-      if (axi_read_data_valid && axi_read_data_id == 4'b1) begin
-        next_read_data_state = read_data_state.next;
+      if (axi_read_data_valid) begin
+        next_read_state = read_state.next;
       end else begin
-        next_read_data_state = read_data_state;
+        next_read_state = read_state;
       end
     end
     READ_SENDING_DATA_RAM_DATA : begin
-      if (axi_read_data_valid) begin
-        next_read_data_state = READ_DATA_WAITING;
-      end else begin
-        next_read_data_state = read_data_state;
-      end
-    end
-  endcase
-
-  always_comb case(read_instruction_state)
-    READ_INSTRUCTION_WAITING: begin
-      if (instruction_ram_request && ~instruction_ram_write && ~have_pending_write) begin
-        next_read_instruction_state = read_instruction_state.next;
-      end else begin
-        next_read_instruction_state = read_instruction_state;
-      end
+      next_read_state = READ_WAITING;
     end
     READ_WAITING_INSTRUCTION_RAM_ADDRESS: begin
-      if (axi_read_address_ready && next_read_data_state != READ_SENDING_DATA_RAM_ADDRESS && read_data_state != READ_SENDING_DATA_RAM_ADDRESS) begin
-        next_read_instruction_state = read_instruction_state.next;
+      if (axi_read_address_ready) begin
+        next_read_state = read_state.next;
       end else begin
-        next_read_instruction_state = read_instruction_state;
+        next_read_state = read_state;
       end
     end
     READ_SENDING_INSTRUCTION_RAM_ADDRESS: begin
-      if (axi_read_address_ready) begin
-        next_read_instruction_state = read_instruction_state.next;
-      end else begin
-        next_read_instruction_state = read_instruction_state;
-      end
+      next_read_state = read_state.next;
     end
     READ_WAITING_INSTRUCTION_RAM_DATA: begin
-      if (axi_read_data_valid && axi_read_data_id == 4'b0) begin
-        next_read_instruction_state = read_instruction_state.next;
+      if (axi_read_data_valid) begin
+        next_read_state = read_state.next;
       end else begin
-        next_read_instruction_state = read_instruction_state;
+        next_read_state = read_state;
       end
     end
     READ_SENDING_INSTRUCTION_RAM_DATA: begin
-      if (axi_read_data_valid && axi_read_data_id == 4'b0) begin
-        next_read_instruction_state = READ_INSTRUCTION_WAITING;
-      end else begin
-        next_read_instruction_state = read_instruction_state;
-      end
+      next_read_state = READ_WAITING;
     end
   endcase
 
