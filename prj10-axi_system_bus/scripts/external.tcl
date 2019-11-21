@@ -5,8 +5,7 @@ namespace eval values {
 set ip_name axi_ram
 if {![file exists ${values::ip_gen_loc}/${ip_name}/${ip_name}.xci]} {
   create_ip -vlnv xilinx.com:ip:blk_mem_gen -module_name ${ip_name}
-  set_property -dict [list CONFIG.Component_Name {axi_ram} \
-                           CONFIG.Interface_Type {AXI4} \
+  set_property -dict [list CONFIG.Interface_Type {AXI4} \
                            CONFIG.AXI_Type {AXI4_Full} \
                            CONFIG.Use_AXI_ID {true} \
                            CONFIG.Memory_Type {Simple_Dual_Port_RAM} \
