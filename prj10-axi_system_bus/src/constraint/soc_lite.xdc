@@ -85,5 +85,3 @@ set_property IOSTANDARD LVCMOS33 [get_ports {switch[*]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {btn_key_col[*]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {btn_key_row[*]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {btn_step[*]}]
-
-

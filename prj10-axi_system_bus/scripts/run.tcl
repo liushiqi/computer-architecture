@@ -172,7 +172,6 @@ if {${command} == "open"} {
   start_gui
 } elseif {${command} == "simulation"} {
   set wave_config_file ${simulation_result_path}/${sim_name}.wcfg
-  puts ${wave_config_file}
   # Create sim path
   if {![file exists ${wave_config_file}]} {
     file mkdir ${simulation_result_path}

@@ -4,7 +4,7 @@ set part_name xc7a200tfbg676-2
 
 set project_name mips_cpu
 
-set design_top soc_lite_top
+set design_top soc_axi_lite_top
 set simulation_top cpu_testbench
 
 set script_path [file dirname [info script]]
