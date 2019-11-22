@@ -1,13 +1,15 @@
-module divider (
+`include "include/cpu_core_params.svh"
+
+module divider(
   input clock,
   input reset,
   input divide_request_valid,
   input is_signed_input,
-  input cpu_core_params::CpuData input1,
-  input cpu_core_params::CpuData input2,
+  input cpu_core_params::cpu_data_t input1,
+  input cpu_core_params::cpu_data_t input2,
   output divide_result_valid,
-  output cpu_core_params::CpuData divide_result,
-  output cpu_core_params::CpuData divide_remain
+  output cpu_core_params::cpu_data_t divide_result,
+  output cpu_core_params::cpu_data_t divide_remain
 );
   import divider_params::*;
   reg [CPU_DATA_WIDTH:0] remain;
@@ -33,7 +35,7 @@ module divider (
   assign next_remain = remain[CPU_DATA_WIDTH] ? temprary_remain_1 + divisor : temprary_remain_1 + neg_divisor;
   assign next_result = {temprary_result_1[CPU_DATA_WIDTH - 1:1], ~next_remain[CPU_DATA_WIDTH]};
 
-  State state, next_state;
+  divide_state_t state, next_state;
 
   assign is_to_return = count == 6'h1e;
 

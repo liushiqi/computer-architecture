@@ -1,5 +1,7 @@
-module priorirty_selector #(
-  parameter type DataType = cpu_core_params::CpuData,
+`include "include/cpu_core_params.svh"
+
+module priorirty_selector#(
+  parameter type DataType = cpu_core_params::cpu_data_t,
   parameter SELECT_PORTS = 4,
   parameter PRIORITY = selector_params::HIGH_TO_LOW
 ) (

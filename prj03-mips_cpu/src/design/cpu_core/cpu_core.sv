@@ -1,26 +1,41 @@
-`include "cpu_params.svh"
-`include "coprocessor_params.svh"
+`include "include/cpu_core_params.svh"
+`include "include/if_stage_params.svh"
+`include "include/id_stage_params.svh"
+`include "include/ex_stage_params.svh"
+`include "include/io_stage_params.svh"
+`include "include/wb_stage_params.svh"
+`include "include/coprocessor_params.svh"
 
-module cpu_core (
+module cpu_core(
   input clock,
   input reset_,
-  // inst sram interface
-  output instruction_ram_enabled,
+  // instruction ram interface
+  output instruction_ram_request,
+  output instruction_ram_write,
+  output [1:0] instruction_ram_size,
+  output cpu_core_params::cpu_data_t instruction_ram_address,
+  output cpu_core_params::cpu_data_t instruction_ram_write_data,
   output [3:0] instruction_ram_write_strobe,
-  output [31:0] instruction_ram_address,
-  output [31:0] instruction_ram_write_data,
-  input [31:0] instruction_ram_read_data,
-  // data sram interface
-  output data_ram_enabled,
-  output [3:0] data_ram_write_enabled,
-  output [31:0] data_ram_address,
-  output [31:0] data_ram_write_data,
-  input [31:0] data_ram_read_data,
+  input cpu_core_params::cpu_data_t instruction_ram_read_data,
+  input instruction_ram_address_ready,
+  input instruction_ram_data_ready,
+  // data ram interface
+  output data_ram_request,
+  output data_ram_write,
+  output [1:0] data_ram_size,
+  output cpu_core_params::cpu_data_t data_ram_address,
+  output cpu_core_params::cpu_data_t data_ram_write_data,
+  output [3:0] data_ram_write_strobe,
+  input cpu_core_params::cpu_data_t data_ram_read_data,
+  input data_ram_address_ready,
+  input data_ram_data_ready,
   // trace debug interface
-  output [31:0] debug_program_count,
+  output cpu_core_params::cpu_data_t debug_program_count,
   output [3:0] debug_register_file_write_enabled,
   output [4:0] debug_register_file_write_address,
-  output [31:0] debug_register_file_write_data
+  output cpu_core_params::cpu_data_t debug_register_file_write_data,
+  // interrupt
+  input [5:0] hardware_interrupt
 );
   import cpu_core_params::*;
   reg reset;
@@ -30,24 +45,24 @@ module cpu_core (
   wire ex_allow_in;
   wire io_allow_in;
   wire wb_allow_in;
-  if_stage_params::IFToIDInstructionBusData if_to_id_instruction_bus;
+  if_stage_params::if_to_id_bus_t if_to_id_bus;
 
-  id_stage_params::IDToEXDecodeBusData id_to_ex_decode_bus;
-  id_stage_params::IDToIFBranchBusData id_to_if_branch_bus;
+  id_stage_params::id_to_ex_bus_t id_to_ex_bus;
+  id_stage_params::id_to_if_branch_bus_t id_to_if_branch_bus;
 
-  ex_stage_params::EXToIOData ex_to_io_bus;
-  ex_stage_params::EXToIDBackPassData ex_to_id_back_pass_bus;
+  ex_stage_params::ex_to_io_bus_t ex_to_io_bus;
+  ex_stage_params::ex_to_id_back_pass_bus_t ex_to_id_back_pass_bus;
 
-  io_stage_params::IOToWBData io_to_wb_bus;
-  io_stage_params::IOToIDBackPassData io_to_id_back_pass_bus;
+  io_stage_params::io_to_wb_bus_t io_to_wb_bus;
+  io_stage_params::io_to_id_back_pass_bus_t io_to_id_back_pass_bus;
 
-  wb_stage_params::WBToRegisterFileData wb_to_register_file_bus;
-  wb_stage_params::WBExceptionBus wb_exception_bus;
-  wb_stage_params::WBToIDBackPassData wb_to_id_back_pass_bus;
+  wb_stage_params::wb_to_register_file_bus_t wb_to_register_file_bus;
+  wb_stage_params::wb_exception_bus_t wb_exception_bus;
+  wb_stage_params::wb_to_id_back_pass_bus_t wb_to_id_back_pass_bus;
+  wb_stage_params::wb_to_cp0_bus_t wb_to_cp0_data_bus;
 
-  coprocessor0_params::CP0ToIFData cp0_to_if_data_bus;
-  coprocessor0_params::WBToCP0Data wb_to_cp0_data_bus;
-  CpuData cp0_read_data;
+  coprocessor0_params::cp0_to_if_bus_t cp0_to_if_data_bus;
+  cpu_data_t cp0_read_data;
 
   wire id_have_exception_forwards;
   wire ex_have_exception_forwards;
@@ -73,17 +88,21 @@ module cpu_core (
     // branch bus
     .id_to_if_branch_bus,
     // output to id
-    .if_to_id_instruction_bus,
+    .if_to_id_bus,
     // exception bus
     .wb_exception_bus,
     .cp0_to_if_data_bus,
     .if_have_exception_backwards,
     // instruction sram interface
-    .instruction_ram_enabled,
-    .instruction_ram_write_strobe,
+    .instruction_ram_request,
+    .instruction_ram_write,
+    .instruction_ram_size,
     .instruction_ram_address,
     .instruction_ram_write_data,
-    .instruction_ram_read_data
+    .instruction_ram_write_strobe,
+    .instruction_ram_read_data,
+    .instruction_ram_address_ready,
+    .instruction_ram_data_ready
   );
 
   // instruction decode stage
@@ -94,13 +113,13 @@ module cpu_core (
     .ex_allow_in,
     .id_allow_in,
     // from if stage
-    .if_to_id_instruction_bus,
+    .if_to_id_bus,
     // backpass
     .ex_to_id_back_pass_bus,
     .io_to_id_back_pass_bus,
     .wb_to_id_back_pass_bus,
     // to ex
-    .id_to_ex_decode_bus,
+    .id_to_ex_bus,
     // to if branch
     .id_to_if_branch_bus,
     // exception bus
@@ -119,7 +138,7 @@ module cpu_core (
     .io_allow_in,
     .ex_allow_in,
     // from ds
-    .id_to_ex_decode_bus,
+    .id_to_ex_bus,
     // to id
     .ex_to_id_back_pass_bus,
     // to io
@@ -129,10 +148,13 @@ module cpu_core (
     .ex_have_exception_forwards,
     .ex_have_exception_backwards,
     // data sram interface
-    .data_ram_enabled,
-    .data_ram_write_enabled,
+    .data_ram_request,
+    .data_ram_write,
+    .data_ram_size,
     .data_ram_address,
-    .data_ram_write_data
+    .data_ram_write_data,
+    .data_ram_write_strobe,
+    .data_ram_address_ready
   );
 
   // io stage
@@ -153,7 +175,8 @@ module cpu_core (
     // to io data
     .io_to_wb_bus,
     // from data sram
-    .data_ram_read_data
+    .data_ram_read_data,
+    .data_ram_data_ready
   );
 
   // write back stage
@@ -187,6 +210,6 @@ module cpu_core (
     .wb_to_cp0_data_bus,
     .cp0_to_if_data_bus,
     .cp0_read_data,
-    .hardware_interrupt(6'h00)
+    .hardware_interrupt
   );
-endmodule : cpu_core
+endmodule: cpu_core

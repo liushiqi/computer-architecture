@@ -1,5 +1,5 @@
 package axi_params;
-  typedef logic [31:0] AXIData;
+  typedef logic [31:0] axi_data_t;
 
   typedef enum logic [31:0] {
     DATA_WAITING,
@@ -12,7 +12,7 @@ package axi_params;
     SENDING_DATA_RAM_WRITE_DATA,
     GETTING_DATA_RAM_WRITE_APPLY,
     SENDING_DATA_RAM_WRITE_APPLY
-  } DataState;
+  } data_state_t;
   
   typedef enum logic [31:0] {
     INSTRUCTION_WAITING,
@@ -20,8 +20,8 @@ package axi_params;
     SENDING_INSTRUCTION_RAM_ADDRESS,
     GETTING_INSTRUCTION_RAM_DATA,
     SENDING_INSTRUCTION_RAM_DATA
-  } InstructionState;
-endpackage
+  } instruction_state_t;
+endpackage: axi_params
 
 module cpu_axi_interface (
   input clock,
@@ -30,23 +30,25 @@ module cpu_axi_interface (
   input instruction_ram_request,
   input instruction_ram_write,
   input [1:0] instruction_ram_size,
-  input axi_params::AXIData instruction_ram_address,
-  input axi_params::AXIData instruction_ram_write_data,
-  output axi_params::AXIData instruction_ram_read_data,
+  input axi_params::axi_data_t instruction_ram_address,
+  input axi_params::axi_data_t instruction_ram_write_data,
+  input [3:0] instruction_ram_write_strobe,
+  output axi_params::axi_data_t instruction_ram_read_data,
   output instruction_ram_address_ready,
   output instruction_ram_data_ready,
   // data ram
   input data_ram_request,
   input data_ram_write,
   input [1:0] data_ram_size,
-  input axi_params::AXIData data_ram_address,
-  input axi_params::AXIData data_ram_write_data,
-  output axi_params::AXIData data_ram_read_data,
+  input axi_params::axi_data_t data_ram_address,
+  input axi_params::axi_data_t data_ram_write_data,
+  input [3:0] data_ram_write_strobe,
+  output axi_params::axi_data_t data_ram_read_data,
   output data_ram_address_ready,
   output data_ram_data_ready,
   // axi ar ports
   output [3:0] axi_read_address_id,
-  output axi_params::AXIData axi_read_address,
+  output axi_params::axi_data_t axi_read_address,
   output [7:0] axi_read_address_length,
   output [2:0] axi_read_address_size,
   output [1:0] axi_read_address_burst,
@@ -57,14 +59,14 @@ module cpu_axi_interface (
   input axi_read_address_ready,
   // axi r ports
   input [3:0] axi_read_data_id,
-  input axi_params::AXIData axi_read_data,
+  input axi_params::axi_data_t axi_read_data,
   input [1:0] axi_read_data_response,
   input axi_read_data_last,
   input axi_read_data_valid,
   output axi_read_data_ready,
   // axi aw ports
   output [3:0] axi_write_address_id,
-  output axi_params::AXIData axi_write_address,
+  output axi_params::axi_data_t axi_write_address,
   output [7:0] axi_write_address_length,
   output [2:0] axi_write_address_size,
   output [1:0] axi_write_address_burst,
@@ -75,7 +77,7 @@ module cpu_axi_interface (
   input axi_write_address_ready,
   // axi w ports
   output [3:0] axi_write_data_id,
-  output axi_params::AXIData axi_write_data,
+  output axi_params::axi_data_t axi_write_data,
   output [3:0] axi_write_data_strobe,
   output axi_write_data_last,
   output axi_write_data_valid,
@@ -90,22 +92,22 @@ module cpu_axi_interface (
   wire reset;
   assign reset = ~reset_;
   // state
-  DataState data_state;
-  DataState next_data_state;
-  InstructionState instruction_state;
-  InstructionState next_instruction_state;
+  data_state_t data_state;
+  data_state_t next_data_state;
+  instruction_state_t instruction_state;
+  instruction_state_t next_instruction_state;
   reg have_pending_write;
 
   // cache
-  AXIData data_ram_read_address_cache;
-  AXIData data_ram_read_size_cache;
-  AXIData data_ram_read_data_cache;
-  AXIData instruction_ram_read_address_cache;
-  AXIData instruction_ram_read_size_cache;
-  AXIData instruction_ram_read_data_cache;
-  AXIData data_ram_write_address_cache;
-  AXIData data_ram_write_size_cache;
-  AXIData data_ram_write_data_cache;
+  axi_data_t data_ram_read_address_cache;
+  axi_data_t data_ram_read_size_cache;
+  axi_data_t data_ram_read_data_cache;
+  axi_data_t instruction_ram_read_address_cache;
+  axi_data_t instruction_ram_read_size_cache;
+  axi_data_t instruction_ram_read_data_cache;
+  axi_data_t data_ram_write_address_cache;
+  axi_data_t data_ram_write_size_cache;
+  axi_data_t data_ram_write_data_cache;
   reg [3:0] data_ram_write_data_strobe_cache;
 
   // cpu
@@ -247,10 +249,7 @@ module cpu_axi_interface (
       data_ram_write_address_cache <= data_ram_address;
       data_ram_write_size_cache <= data_ram_size;
       data_ram_write_data_cache <= data_ram_write_data;
-      data_ram_write_data_strobe_cache <=
-        data_ram_size == 2 ? 4'b1111 :
-        data_ram_size == 1 ? (data_ram_address[1:0] == 2'b10 ? 4'b1100 : 4'b0011) :
-        (data_ram_address[1:0] == 2'b11 ? 4'b1000 : data_ram_address[1:0] == 2'b10 ? 4'b0100 : data_ram_address[1:0] == 2'b01 ? 4'b0010 : 4'b0001);
+      data_ram_write_data_strobe_cache <= data_ram_write_strobe;
     end
   end
 

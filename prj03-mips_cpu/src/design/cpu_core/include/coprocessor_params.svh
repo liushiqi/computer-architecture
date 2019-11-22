@@ -1,0 +1,46 @@
+`ifndef COPROCESSOR_PARAMS_SVH
+`define COPROCESSOR_PARAMS_SVH
+
+`include "cpu_core_params.svh"
+
+package coprocessor0_params;
+  import cpu_core_params::*;
+  export cpu_core_params::cpu_data_t;
+  export cpu_core_params::CPU_DATA_WIDTH;
+
+  typedef struct packed {
+    address_t exception_address;
+    logic [7:0] interrupt_valid;
+  } cp0_to_if_bus_t;
+
+  typedef address_t badvaddr_t;
+
+  typedef cpu_data_t count_t;
+
+  typedef cpu_data_t compare_t;
+
+  typedef struct packed {
+    logic [8:0] zero1;
+    logic boot_exception_vector;
+    logic [5:0] zero2;
+    logic [7:0] interrupt_mask;
+    logic [5:0] zero3;
+    logic exception_level;
+    logic interrupt_enabled;
+  } status_t;
+
+  typedef struct packed {
+    logic in_delay_slot;
+    logic timer_interrupt;
+    logic [13:0] zero1;
+    logic [5:0] hardware_interrupt;
+    logic [1:0] software_interrupt;
+    logic zero2;
+    logic [4:0] exception_code;
+    logic [1:0] zero3;
+  } cause_t;
+
+  typedef address_t epc_t;
+endpackage: coprocessor0_params
+
+`endif

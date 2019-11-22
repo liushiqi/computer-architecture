@@ -1,25 +1,28 @@
-`include "cpu_params.svh"
+`include "include/id_stage_params.svh"
+`include "include/ex_stage_params.svh"
+`include "include/io_stage_params.svh"
+`include "include/wb_stage_params.svh"
 
-module id_stage (
+module id_stage(
   input clock,
   input reset,
   // id allow in
   input ex_allow_in,
   output id_allow_in,
   // from if instruction bus data
-  input if_stage_params::IFToIDInstructionBusData if_to_id_instruction_bus,
+  input if_stage_params::if_to_id_bus_t if_to_id_bus,
   // backpass data
-  input ex_stage_params::EXToIDBackPassData ex_to_id_back_pass_bus,
-  input io_stage_params::IOToIDBackPassData io_to_id_back_pass_bus,
-  input wb_stage_params::WBToIDBackPassData wb_to_id_back_pass_bus,
+  input ex_stage_params::ex_to_id_back_pass_bus_t ex_to_id_back_pass_bus,
+  input io_stage_params::io_to_id_back_pass_bus_t io_to_id_back_pass_bus,
+  input wb_stage_params::wb_to_id_back_pass_bus_t wb_to_id_back_pass_bus,
   // to ex decode result data
-  output id_stage_params::IDToEXDecodeBusData id_to_ex_decode_bus,
+  output id_stage_params::id_to_ex_bus_t id_to_ex_bus,
   // to fs
-  output id_stage_params::IDToIFBranchBusData id_to_if_branch_bus,
+  output id_stage_params::id_to_if_branch_bus_t id_to_if_branch_bus,
   // to register file: for write back stage
-  input wb_stage_params::WBToRegisterFileData wb_to_register_file_bus,
+  input wb_stage_params::wb_to_register_file_bus_t wb_to_register_file_bus,
   // exception data
-  input wb_stage_params::WBExceptionBus wb_exception_bus,
+  input wb_stage_params::wb_exception_bus_t wb_exception_bus,
   output wire id_have_exception_forwards,
   input wire id_have_exception_backwards
 );
@@ -28,13 +31,13 @@ module id_stage (
   wire id_ready_go;
   wire id_to_ex_valid;
 
-  if_stage_params::IFToIDInstructionBusData from_if_data; // reg
-  CpuData id_instruction;
-  ProgramCount id_program_count;
+  if_stage_params::if_to_id_bus_t from_if_data; // reg
+  cpu_data_t id_instruction;
+  program_count_t id_program_count;
   assign id_instruction = from_if_data.instruction;
   assign id_program_count = from_if_data.program_count;
 
-  wb_stage_params::WBToRegisterFileData register_file_write_signals;
+  wb_stage_params::wb_to_register_file_bus_t register_file_write_signals;
   assign register_file_write_signals = wb_to_register_file_bus;
 
   wire branch_taken;
@@ -165,7 +168,7 @@ module id_stage (
     target: branch_target
   };
 
-  assign id_to_ex_decode_bus = '{
+  assign id_to_ex_bus = '{
     valid: id_to_ex_valid,
     program_count: id_program_count,
     multi_use_register_value: multi_use_register_value,
@@ -227,13 +230,13 @@ module id_stage (
     end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
       id_valid <= 1'b0;
     end else if (id_allow_in) begin
-      id_valid <= if_to_id_instruction_bus.valid;
+      id_valid <= if_to_id_bus.valid;
     end
   end
 
   always_ff @(posedge clock) begin
-    if (if_to_id_instruction_bus.valid && id_allow_in) begin
-      from_if_data <= if_to_id_instruction_bus;
+    if (if_to_id_bus.valid && id_allow_in) begin
+      from_if_data <= if_to_id_bus;
     end
   end
 
@@ -489,6 +492,6 @@ module id_stage (
       instruction_j || instruction_jal || instruction_jalr || instruction_jr) && id_valid;
   assign branch_target =
     (instruction_beq || instruction_bgez || instruction_bgezal || instruction_bgtz || instruction_blez || instruction_bltz || instruction_bltzal || instruction_bne) ?
-      (if_to_id_instruction_bus.program_count + {{14{immediate[15]}}, immediate[15:0], 2'b0}) :
-    (instruction_jalr || instruction_jr) ? source_register_post_value : {if_to_id_instruction_bus.program_count[31:28], jump_address[25:0], 2'b0};
-endmodule : id_stage
+      (if_to_id_bus.program_count + {{14{immediate[15]}}, immediate[15:0], 2'b0}) :
+    (instruction_jalr || instruction_jr) ? source_register_post_value : {if_to_id_bus.program_count[31:28], jump_address[25:0], 2'b0};
+endmodule: id_stage

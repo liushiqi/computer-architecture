@@ -1,23 +1,24 @@
-`include "cpu_params.svh"
+`include "include/io_stage_params.svh"
 
-module io_state (
+module io_state(
   input clock,
   input reset,
   // allow in
   input wb_allow_in,
   output io_allow_in,
   // from ex data
-  input ex_stage_params::EXToIOData ex_to_io_bus,
+  input ex_stage_params::ex_to_io_bus_t ex_to_io_bus,
   // back pass to id
-  output io_stage_params::IOToIDBackPassData io_to_id_back_pass_bus,
+  output io_stage_params::io_to_id_back_pass_bus_t io_to_id_back_pass_bus,
   // to wb data
-  output io_stage_params::IOToWBData io_to_wb_bus,
+  output io_stage_params::io_to_wb_bus_t io_to_wb_bus,
   // exception data
-  input wb_stage_params::WBExceptionBus wb_exception_bus,
+  input wb_stage_params::wb_exception_bus_t wb_exception_bus,
   output wire io_have_exception_forwards,
   input wire io_have_exception_backwards,
   // from data sram
-  input cpu_core_params::CpuData data_ram_read_data
+  input cpu_core_params::cpu_data_t data_ram_read_data,
+  input data_ram_data_ready
 );
   import io_stage_params::*;
   reg io_valid;
@@ -29,15 +30,15 @@ module io_state (
   wire io_have_exception;
   wire [5:0] exception_code;
 
-  ex_stage_params::EXToIOData from_ex_data; // reg
-  ProgramCount io_program_count;
+  ex_stage_params::ex_to_io_bus_t from_ex_data; // reg
+  program_count_t io_program_count;
   assign io_program_count = from_ex_data.program_count;
 
-  CpuData memory_read_result;
-  CpuData final_result;
+  cpu_data_t memory_read_result;
+  cpu_data_t final_result;
 
-  CpuData multiply_low_register;
-  CpuData multiply_high_register;
+  cpu_data_t multiply_low_register;
+  cpu_data_t multiply_high_register;
 
   wire [3:0] register_file_write_strobe;
   assign register_file_write_strobe =
@@ -103,7 +104,7 @@ module io_state (
       from_ex_data <= ex_to_io_bus;
     end
   end
-  
+
   assign io_have_exception_forwards = (from_ex_data.exception_valid || from_ex_data.eret_flush || io_have_exception) && io_valid;
   assign address_exception = (from_ex_data.is_load_half_word && (from_ex_data.memory_address[0] != 1'b0)) || (from_ex_data.is_load_word && (from_ex_data.memory_address[1:0] != 2'b00));
   assign io_have_exception = address_exception;
@@ -150,4 +151,4 @@ module io_state (
     from_ex_data.result_high & ~from_ex_data.high_low_write ? multiply_high_register :
     from_ex_data.result_low & ~from_ex_data.high_low_write ? multiply_low_register :
     from_ex_data.move_to_cp0 ? from_ex_data.multi_use_register_data : from_ex_data.alu_result;
-endmodule : io_state
+endmodule: io_state

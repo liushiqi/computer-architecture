@@ -1,10 +1,12 @@
-module multiply_stage1 (
+`include "include/cpu_core_params.svh"
+
+module multiply_stage1(
   input clock,
   input reset,
-  input cpu_core_params::CpuData input1,
-  input cpu_core_params::CpuData input2,
+  input cpu_core_params::cpu_data_t input1,
+  input cpu_core_params::cpu_data_t input2,
   input is_signed,
-  output multiplier_params::Stage1ToStage2BusData stage1_to_stage2_bus
+  output multiplier_params::multiply_stages_bus_t stage1_to_stage2_bus
 );
   import multiplier_params::*;
   wire [CPU_DATA_WIDTH / 2:0] wallace_input [CPU_DATA_WIDTH * 2];
@@ -50,7 +52,7 @@ module multiply_stage1 (
   endgenerate
 endmodule
 
-module wallace_adder (
+module wallace_adder(
   input [16:0] added_values,
   input [13:0] carry_in,
   output result,
@@ -99,14 +101,14 @@ module wallace_adder (
   assign {carry, result} = sixth_step_input[0] + sixth_step_input[1] + sixth_step_input[2];
 endmodule
 
-module multiply_stage2 (
+module multiply_stage2(
   input clock,
   input reset,
-  input multiplier_params::Stage1ToStage2BusData stage1_to_stage2_bus,
-  output multiplier_params::MultiplyResultData result
+  input multiplier_params::multiply_stages_bus_t stage1_to_stage2_bus,
+  output multiplier_params::multiply_result_bus_t result
 );
   import multiplier_params::*;
-  Stage1ToStage2BusData from_stage1_data;
+  multiply_stages_bus_t from_stage1_data;
   wire [CPU_DATA_WIDTH * 2 - 1:0] adder_input1;
   wire [CPU_DATA_WIDTH * 2:0] adder_input2;
   wire [13:0] carry_values [CPU_DATA_WIDTH * 2 + 1];
@@ -132,15 +134,15 @@ module multiply_stage2 (
   end
 endmodule
 
-module multiplier (
+module multiplier(
   input clock,
   input reset,
-  input cpu_core_params::CpuData input1,
-  input cpu_core_params::CpuData input2,
+  input cpu_core_params::cpu_data_t input1,
+  input cpu_core_params::cpu_data_t input2,
   input is_signed,
-  output multiplier_params::MultiplyResultData result
+  output multiplier_params::multiply_result_bus_t result
 );
-  multiplier_params::Stage1ToStage2BusData stage1_to_stage2_bus;
+  multiplier_params::multiply_stages_bus_t stage1_to_stage2_bus;
 
   multiply_stage1 u_stage1(
     .clock,

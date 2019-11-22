@@ -1,26 +1,29 @@
-`include "cpu_params.svh"
+`include "include/ex_stage_params.svh"
 
-module ex_stage (
+module ex_stage(
   input clock,
   input reset,
   // allow in
   input io_allow_in,
   output ex_allow_in,
   // from id instructoin decode data
-  input id_stage_params::IDToEXDecodeBusData id_to_ex_decode_bus,
+  input id_stage_params::id_to_ex_bus_t id_to_ex_bus,
   // backpass data
-  output ex_stage_params::EXToIDBackPassData ex_to_id_back_pass_bus,
+  output ex_stage_params::ex_to_id_back_pass_bus_t ex_to_id_back_pass_bus,
   // exception data
-  input wb_stage_params::WBExceptionBus wb_exception_bus,
+  input wb_stage_params::wb_exception_bus_t wb_exception_bus,
   output wire ex_have_exception_forwards,
   input wire ex_have_exception_backwards,
   // to io data
-  output ex_stage_params::EXToIOData ex_to_io_bus,
+  output ex_stage_params::ex_to_io_bus_t ex_to_io_bus,
   // data sram interface
-  output data_ram_enabled,
-  output [3:0] data_ram_write_enabled,
-  output [31:0] data_ram_address,
-  output [31:0] data_ram_write_data
+  output data_ram_request,
+  output data_ram_write,
+  output [1:0] data_ram_size,
+  output cpu_core_params::cpu_data_t data_ram_address,
+  output cpu_core_params::cpu_data_t data_ram_write_data,
+  output [3:0] data_ram_write_strobe,
+  input data_ram_address_ready
 );
   import ex_stage_params::*;
   reg ex_valid;
@@ -34,18 +37,18 @@ module ex_stage (
   wire overflow_exception;
   wire alu_overflow;
 
-  id_stage_params::IDToEXDecodeBusData from_id_data; // reg
-  ProgramCount ex_program_count;
+  id_stage_params::id_to_ex_bus_t from_id_data; // reg
+  program_count_t ex_program_count;
   assign ex_program_count = from_id_data.program_count;
 
   wire [31:0] alu_input1;
   wire [31:0] alu_input2;
   wire [31:0] alu_result;
 
-  multiplier_params::MultiplyResultData multiply_result;
+  multiplier_params::multiply_result_bus_t multiply_result;
   wire divide_result_valid;
-  CpuData divide_result;
-  CpuData divide_remain;
+  cpu_data_t divide_result;
+  cpu_data_t divide_remain;
 
   wire result_is_from_memory;
 
@@ -106,13 +109,13 @@ module ex_stage (
     end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
       ex_valid <= 1'b0;
     end else if (ex_allow_in) begin
-      ex_valid <= id_to_ex_decode_bus.valid;
+      ex_valid <= id_to_ex_bus.valid;
     end
   end
 
   always_ff @(posedge clock) begin
-    if (id_to_ex_decode_bus.valid && ex_allow_in) begin
-      from_id_data <= id_to_ex_decode_bus;
+    if (id_to_ex_bus.valid && ex_allow_in) begin
+      from_id_data <= id_to_ex_bus;
     end
   end
 
@@ -195,4 +198,4 @@ module ex_stage (
     .divide_result,
     .divide_remain
   );
-endmodule : ex_stage
+endmodule: ex_stage

@@ -1,25 +1,29 @@
-`include "cpu_params.svh"
-`include "coprocessor_params.svh"
+`include "include/if_stage_params.svh"
+`include "include/coprocessor_params.svh"
 
-module if_stage (
+module if_stage(
   input clock,
   input reset,
   // id allows in
   input id_allow_in,
   // branch bus
-  input id_stage_params::IDToIFBranchBusData id_to_if_branch_bus,
+  input id_stage_params::id_to_if_branch_bus_t id_to_if_branch_bus,
   // to id
-  output if_stage_params::IFToIDInstructionBusData if_to_id_instruction_bus,
+  output if_stage_params::if_to_id_bus_t if_to_id_bus,
   // exception data
-  input wb_stage_params::WBExceptionBus wb_exception_bus,
-  input coprocessor0_params::CP0ToIFData cp0_to_if_data_bus,
+  input wb_stage_params::wb_exception_bus_t wb_exception_bus,
+  input coprocessor0_params::cp0_to_if_bus_t cp0_to_if_data_bus,
   input wire if_have_exception_backwards,
   // instruction sram interface
-  output instruction_ram_enabled,
+  output instruction_ram_request,
+  output instruction_ram_write,
+  output [1:0] instruction_ram_size,
+  output cpu_core_params::cpu_data_t instruction_ram_address,
+  output cpu_core_params::cpu_data_t instruction_ram_write_data,
   output [3:0] instruction_ram_write_strobe,
-  output cpu_core_params::Address instruction_ram_address,
-  output cpu_core_params::CpuData instruction_ram_write_data,
-  input cpu_core_params::CpuData instruction_ram_read_data
+  input cpu_core_params::cpu_data_t instruction_ram_read_data,
+  input instruction_ram_address_ready,
+  input instruction_ram_data_ready
 );
   import if_stage_params::*;
   reg if_valid;
@@ -34,12 +38,12 @@ module if_stage (
   wire interrupt;
   wire [5:0] exception_code;
 
-  ProgramCount sequence_program_count;
-  ProgramCount next_program_count;
+  program_count_t sequence_program_count;
+  program_count_t next_program_count;
 
-  CpuData if_instruction;
-  CpuData if_program_count; // reg
-  assign if_to_id_instruction_bus = '{
+  cpu_data_t if_instruction;
+  cpu_data_t if_program_count; // reg
+  assign if_to_id_bus = '{
     valid: if_to_id_valid,
     program_count: if_program_count,
     instruction: if_instruction,

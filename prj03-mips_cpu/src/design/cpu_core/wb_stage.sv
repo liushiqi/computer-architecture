@@ -1,41 +1,41 @@
-`include "cpu_params.svh"
-`include "coprocessor_params.svh"
+`include "include/wb_stage_params.svh"
+`include "include/coprocessor_params.svh"
 
-module wb_stage (
+module wb_stage(
   input clock,
   input reset,
   // allow in
   output wb_allow_in,
   // from io data
-  input io_stage_params::IOToWBData io_to_wb_bus,
+  input io_stage_params::io_to_wb_bus_t io_to_wb_bus,
   // back pass data to id
-  output wb_stage_params::WBToIDBackPassData wb_to_id_back_pass_bus,
+  output wb_stage_params::wb_to_id_back_pass_bus_t wb_to_id_back_pass_bus,
   // to register file: for write back
-  output wb_stage_params::WBToRegisterFileData wb_to_register_file_bus,
+  output wb_stage_params::wb_to_register_file_bus_t wb_to_register_file_bus,
   // to cp0 write data
-  output coprocessor0_params::WBToCP0Data wb_to_cp0_data_bus,
-  input cpu_core_params::CpuData cp0_read_data,
+  output wb_stage_params::wb_to_cp0_bus_t wb_to_cp0_data_bus,
+  input cpu_core_params::cpu_data_t cp0_read_data,
   // exception data
-  output wb_stage_params::WBExceptionBus wb_exception_bus,
+  output wb_stage_params::wb_exception_bus_t wb_exception_bus,
   output wire wb_have_exception_forwards,
   // trace debug interface
-  output cpu_core_params::ProgramCount debug_program_count,
+  output cpu_core_params::program_count_t debug_program_count,
   output [3:0] debug_register_file_write_enabled,
   output [4:0] debug_register_file_write_address,
-  output cpu_core_params::CpuData debug_register_file_write_data
+  output cpu_core_params::cpu_data_t debug_register_file_write_data
 );
   import wb_stage_params::*;
   reg wb_valid;
   wire wb_ready_go;
 
-  io_stage_params::IOToWBData from_io_data; // reg
-  ProgramCount wb_program_count;
+  io_stage_params::io_to_wb_bus_t from_io_data; // reg
+  program_count_t wb_program_count;
   assign wb_program_count = from_io_data.program_count;
 
   wire register_file_write_enabled;
   wire [3:0] register_file_write_strobe;
   wire [4:0] register_file_write_address;
-  CpuData register_file_write_data;
+  cpu_data_t register_file_write_data;
   assign wb_to_register_file_bus = '{
     write_enabled: register_file_write_enabled,
     write_address: register_file_write_address,
@@ -99,4 +99,4 @@ module wb_stage (
   assign debug_register_file_write_enabled = {4{register_file_write_enabled}} & from_io_data.register_file_write_strobe;
   assign debug_register_file_write_address = from_io_data.register_file_address;
   assign debug_register_file_write_data = register_file_write_data;
-endmodule : wb_stage
+endmodule: wb_stage
