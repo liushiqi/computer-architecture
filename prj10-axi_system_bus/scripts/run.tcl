@@ -172,7 +172,6 @@ if {${command} == "open"} {
   start_gui
 } elseif {${command} == "simulation"} {
   set wave_config_file ${simulation_result_path}/${sim_name}.wcfg
-  puts ${wave_config_file}
   # Create sim path
   if {![file exists ${wave_config_file}]} {
     file mkdir ${simulation_result_path}
@@ -185,22 +184,11 @@ if {${command} == "open"} {
   set_property target_simulator "XSim" [current_project]
   set_property xsim.view ${wave_config_file} [get_filesets sim_1]
   launch_simulation -mode behavioral
-  run -all
+  #run -all
   start_gui
 } elseif {${command} == "bitstream" || ${command} == "implementation"} {
   generate_bitstream
 } elseif {${command} == "board"} {
-  set sources [get_files_in_dir ${source_path}]
-  set max_time 0
-  foreach file $sources {
-    set time [file mtime $file]
-    if {$time > max_time} {
-      set max_time $time
-    }
-  }
-  if {![file exists ${bit_file}] || [file mtime ${bit_file}] < $max_time} {
-    generate_bitstream
-  }
   open_hw
   connect_hw_server
   open_hw_target

@@ -86,7 +86,3 @@ set_property IOSTANDARD LVCMOS33 [get_ports {switch[*]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {btn_key_col[*]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {btn_key_row[*]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {btn_step[*]}]
-
-
-set_false_path -from [get_clocks -of_objects [get_pins clk_pll/inst/plle2_adv_inst/CLKOUT1]] -to [get_clocks -of_objects [get_pins clk_pll/inst/plle2_adv_inst/CLKOUT0]]
-set_false_path -from [get_clocks -of_objects [get_pins clk_pll/inst/plle2_adv_inst/CLKOUT0]] -to [get_clocks -of_objects [get_pins clk_pll/inst/plle2_adv_inst/CLKOUT1]]
