@@ -40,6 +40,8 @@ module io_state(
   cpu_data_t multiply_low_register;
   cpu_data_t multiply_high_register;
 
+  cpu_data_t pending_load_count;
+
   wire [3:0] register_file_write_strobe;
   assign register_file_write_strobe =
     ({4{~from_ex_data.is_load_left & ~from_ex_data.is_load_right}} & 4'b1111) |
@@ -76,7 +78,7 @@ module io_state(
   assign previous_valid = from_ex_data.valid & ~from_ex_data.result_is_from_memory & ~(from_ex_data.result_high | from_ex_data.result_low) & from_ex_data.register_write;
   assign io_to_id_back_pass_bus = '{
     valid: from_ex_data.register_write & io_valid,
-    data_valid: from_ex_data.valid & ~from_ex_data.move_from_cp0 & from_ex_data.register_write,
+    data_valid: from_ex_data.valid && io_ready_go && !from_ex_data.move_from_cp0 && from_ex_data.register_write,
     write_register: from_ex_data.write_register,
     write_strobe: register_file_write_strobe,
     write_data: final_result,
@@ -86,7 +88,7 @@ module io_state(
     previous_write_data: from_ex_data.alu_result
   };
 
-  assign io_ready_go = should_flush || ~(from_ex_data.divide_valid && ~ex_to_io_bus.divide_result_valid);
+  assign io_ready_go = !should_flush && (!from_ex_data.divide_valid || ex_to_io_bus.divide_result_valid) && (!from_ex_data.result_is_from_memory || (data_ram_data_ready && pending_load_count == 32'b0));
   assign io_allow_in = !io_valid || io_ready_go && wb_allow_in;
   assign io_to_wb_valid = io_valid && io_ready_go;
   always_ff @(posedge clock) begin
@@ -102,6 +104,16 @@ module io_state(
   always_ff @(posedge clock) begin
     if (ex_to_io_bus.valid && io_allow_in) begin
       from_ex_data <= ex_to_io_bus;
+    end
+  end
+
+  always_ff @(posedge clock) begin
+    if (reset) begin
+      pending_load_count <= 32'b0;
+    end else if (from_ex_data.memory_write && io_valid) begin
+      pending_load_count <= pending_load_count + 1;
+    end else if (data_ram_data_ready && pending_load_count != 32'b0) begin
+      pending_load_count <= pending_load_count - 1;
     end
   end
 

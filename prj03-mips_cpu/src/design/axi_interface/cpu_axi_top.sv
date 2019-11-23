@@ -57,6 +57,7 @@ module cpu_axi_top(
   wire [1:0] instruction_ram_size;
   wire axi_params::axi_data_t instruction_ram_address;
   wire axi_params::axi_data_t instruction_ram_write_data;
+  wire [3:0] instruction_ram_write_strobe;
   wire axi_params::axi_data_t instruction_ram_read_data;
   wire instruction_ram_address_ready;
   wire instruction_ram_data_ready;
@@ -66,6 +67,7 @@ module cpu_axi_top(
   wire [1:0] data_ram_size;
   wire axi_params::axi_data_t data_ram_address;
   wire axi_params::axi_data_t data_ram_write_data;
+  wire [3:0] data_ram_write_strobe;
   wire axi_params::axi_data_t data_ram_read_data;
   wire data_ram_address_ready;
   wire data_ram_data_ready;
@@ -79,6 +81,7 @@ module cpu_axi_top(
     .instruction_ram_size,
     .instruction_ram_address,
     .instruction_ram_write_data,
+    .instruction_ram_write_strobe,
     .instruction_ram_read_data,
     .instruction_ram_address_ready,
     .instruction_ram_data_ready,
@@ -88,6 +91,7 @@ module cpu_axi_top(
     .data_ram_size,
     .data_ram_address,
     .data_ram_write_data,
+    .data_ram_write_strobe,
     .data_ram_read_data,
     .data_ram_address_ready,
     .data_ram_data_ready,
@@ -142,6 +146,7 @@ module cpu_axi_top(
     .instruction_ram_size,
     .instruction_ram_address,
     .instruction_ram_write_data,
+    .instruction_ram_write_strobe,
     .instruction_ram_read_data,
     .instruction_ram_address_ready,
     .instruction_ram_data_ready,
@@ -151,6 +156,7 @@ module cpu_axi_top(
     .data_ram_size,
     .data_ram_address,
     .data_ram_write_data,
+    .data_ram_write_strobe,
     .data_ram_read_data,
     .data_ram_address_ready,
     .data_ram_data_ready,

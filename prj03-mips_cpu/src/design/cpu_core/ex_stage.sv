@@ -1,4 +1,6 @@
+`include "include/id_stage_params.svh"
 `include "include/ex_stage_params.svh"
+`include "include/wb_stage_params.svh"
 
 module ex_stage(
   input clock,
@@ -52,7 +54,7 @@ module ex_stage(
 
   wire result_is_from_memory;
 
-  assign result_is_from_memory = from_id_data.is_load_operation;
+  assign result_is_from_memory = from_id_data.memory_read;
   assign ex_to_io_bus = '{
     valid: ex_to_io_valid,
     program_count: ex_program_count,
@@ -72,6 +74,7 @@ module ex_stage(
     is_load_byte: from_id_data.memory_io_type[0],
     memory_io_unsigned: from_id_data.memory_io_unsigned,
     result_is_from_memory: result_is_from_memory,
+    memory_write: from_id_data.memory_write,
     multiply_valid: from_id_data.multiply_valid,
     multiply_result: multiply_result,
     divide_valid: from_id_data.divide_valid,
@@ -95,12 +98,12 @@ module ex_stage(
   assign backpass_address = {5{from_id_data.register_write & ex_valid}} & from_id_data.write_register;
   assign ex_to_id_back_pass_bus = '{
     valid: from_id_data.register_write & ex_valid,
-    data_valid: from_id_data.valid & ~from_id_data.is_load_operation & ~(from_id_data.result_high | from_id_data.result_low) & ~from_id_data.move_from_cp0 & from_id_data.register_write,
+    data_valid: from_id_data.valid & ~from_id_data.memory_read & ~(from_id_data.result_high | from_id_data.result_low) & ~from_id_data.move_from_cp0 & from_id_data.register_write,
     write_register: from_id_data.write_register,
     write_data: alu_result
   };
 
-  assign ex_ready_go = 1'b1;
+  assign ex_ready_go = ~(from_id_data.memory_write || result_is_from_memory) || data_ram_address_ready;
   assign ex_allow_in = !ex_valid || ex_ready_go && io_allow_in;
   assign ex_to_io_valid = ex_valid && ex_ready_go;
   always_ff @(posedge clock) begin
@@ -141,8 +144,34 @@ module ex_stage(
     .alu_overflow
   );
 
-  assign data_ram_enabled = !should_flush;
-  assign data_ram_write_enabled = from_id_data.memory_write && ex_valid ? (
+  assign data_ram_request = (from_id_data.memory_write || from_id_data.memory_read) && !should_flush;
+  assign data_ram_write = from_id_data.memory_write;
+  assign data_ram_size =
+    from_id_data.memory_io_type[0] ? 2'b00 :
+    from_id_data.memory_io_type[2] ? 2'b01 :
+    from_id_data.memory_io_type[4] ? 2'b10 :
+    from_id_data.memory_io_type[1] ? (
+      alu_result[1:0] == 2'b10 ? 2'b01 :
+      alu_result[1:0] == 2'b10 ? 2'b00 : 2'b10
+    ) : (
+      alu_result[1:0] == 2'b00 ? 2'b00 :
+      alu_result[1:0] == 2'b01 ? 2'b01 : 2'b10
+    );
+  assign data_ram_address = from_id_data.memory_io_type[1] ? {alu_result[31:2], 2'b0} : alu_result;
+  assign data_ram_write_data =
+    from_id_data.memory_io_type[0] ? {4{from_id_data.multi_use_register_value[7:0]}} :
+    from_id_data.memory_io_type[2] ? {2{from_id_data.multi_use_register_value[15:0]}} :
+    from_id_data.memory_io_type[1] ? (
+      alu_result[1:0] == 2'b00 ? from_id_data.multi_use_register_value :
+      alu_result[1:0] == 2'b01 ? {from_id_data.multi_use_register_value[23:0], 8'b0} :
+      alu_result[1:0] == 2'b10 ? {from_id_data.multi_use_register_value[15:0], 16'b0} :
+        {from_id_data.multi_use_register_value[7:0], 24'b0}) :
+    from_id_data.memory_io_type[3] ? (
+      alu_result[1:0] == 2'b00 ? {24'b0, from_id_data.multi_use_register_value[31:24]} :
+      alu_result[1:0] == 2'b01 ? {16'b0, from_id_data.multi_use_register_value[31:16]} :
+      alu_result[1:0] == 2'b10 ? {8'b0, from_id_data.multi_use_register_value[31:8]} :
+        from_id_data.multi_use_register_value) : from_id_data.multi_use_register_value;
+  assign data_ram_write_strobe = from_id_data.memory_write && ex_valid ? (
     ({4{from_id_data.memory_io_type[4]}} & 4'b1111) |
     ({4{from_id_data.memory_io_type[3]}} & (
       ({4{alu_result[1:0] == 2'b00}} & 4'b0001) |
@@ -163,20 +192,6 @@ module ex_stage(
       ({4{alu_result[1:0] == 2'b10}} & 4'b0100) |
       ({4{alu_result[1:0] == 2'b11}} & 4'b1000)))
   ) : 4'h0;
-  assign data_ram_address = from_id_data.memory_io_type[1] ? {alu_result[31:2], 2'b0} : alu_result;
-  assign data_ram_write_data =
-    from_id_data.memory_io_type[0] ? {4{from_id_data.multi_use_register_value[7:0]}} :
-    from_id_data.memory_io_type[2] ? {2{from_id_data.multi_use_register_value[15:0]}} :
-    from_id_data.memory_io_type[1] ? (
-      alu_result[1:0] == 2'b00 ? from_id_data.multi_use_register_value :
-      alu_result[1:0] == 2'b01 ? {from_id_data.multi_use_register_value[23:0], 8'b0} :
-      alu_result[1:0] == 2'b10 ? {from_id_data.multi_use_register_value[15:0], 16'b0} :
-        {from_id_data.multi_use_register_value[7:0], 24'b0}) :
-    from_id_data.memory_io_type[3] ? (
-      alu_result[1:0] == 2'b00 ? {24'b0, from_id_data.multi_use_register_value[31:24]} :
-      alu_result[1:0] == 2'b01 ? {16'b0, from_id_data.multi_use_register_value[31:16]} :
-      alu_result[1:0] == 2'b10 ? {8'b0, from_id_data.multi_use_register_value[31:8]} :
-        from_id_data.multi_use_register_value) : from_id_data.multi_use_register_value;
 
   multiplier u_multiplier (
     .clock,

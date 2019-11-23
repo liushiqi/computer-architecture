@@ -170,7 +170,11 @@ module cpu_axi_interface (
       end
     end
     GETTING_DATA_RAM_READ_ADDRESS: begin
-      next_data_state = data_state.next;
+      if (data_ram_request) begin
+        next_data_state = data_state.next;
+      end else begin
+        next_data_state = data_state;
+      end
     end
     SENDING_DATA_RAM_READ_ADDRESS: begin
       if (axi_read_address_ready) begin
@@ -179,18 +183,22 @@ module cpu_axi_interface (
         next_data_state = data_state;
       end
     end
-    GETTING_DATA_RAM_READ_DATA : begin
+    GETTING_DATA_RAM_READ_DATA: begin
       if (axi_read_data_valid && axi_read_data_id == 4'b1) begin
         next_data_state = data_state.next;
       end else begin
         next_data_state = data_state;
       end
     end
-    SENDING_DATA_RAM_READ_DATA : begin
+    SENDING_DATA_RAM_READ_DATA: begin
       next_data_state = DATA_WAITING;
     end
     GETTING_DATA_RAM_WRITE_ADDRESS: begin
-      next_data_state = data_state.next;
+      if (data_ram_request) begin
+        next_data_state = data_state.next;
+      end else begin
+        next_data_state = data_state;
+      end
     end
     SENDING_DATA_RAM_WRITE_ADDRESS: begin
       if (axi_write_address_ready) begin
@@ -199,7 +207,7 @@ module cpu_axi_interface (
         next_data_state = data_state;
       end
     end
-    SENDING_DATA_RAM_WRITE_DATA : begin
+    SENDING_DATA_RAM_WRITE_DATA: begin
       if (axi_write_data_ready) begin
         next_data_state = data_state.next;
       end else begin
@@ -271,7 +279,11 @@ module cpu_axi_interface (
       end
     end
     GETTING_INSTRUCTION_RAM_ADDRESS: begin
-      next_instruction_state = instruction_state.next;
+      if (instruction_ram_request) begin
+        next_instruction_state = instruction_state.next;
+      end else begin
+        next_instruction_state = instruction_state;
+      end
     end
     SENDING_INSTRUCTION_RAM_ADDRESS: begin
       if (axi_read_address_ready && data_state != SENDING_DATA_RAM_READ_ADDRESS) begin

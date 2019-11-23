@@ -44,7 +44,6 @@ module alu(
   wire [63:0] sr64_result;
   wire [31:0] sr_result;
 
-
   // 32-bit adder
   wire [31:0] adder_input_1;
   wire [31:0] adder_input_2;

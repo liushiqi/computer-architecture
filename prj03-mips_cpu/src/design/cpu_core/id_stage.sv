@@ -1,3 +1,4 @@
+`include "include/if_stage_params.svh"
 `include "include/id_stage_params.svh"
 `include "include/ex_stage_params.svh"
 `include "include/io_stage_params.svh"
@@ -44,7 +45,7 @@ module id_stage(
   wire [31:0] branch_target;
 
   wire [11:0] alu_operation;
-  wire is_load_operation;
+  wire memory_read;
   wire is_jump_operation;
   wire source1_is_shift_amount;
   wire source1_is_program_count;
@@ -178,6 +179,7 @@ module id_stage(
     destination_register: destination_register,
     multi_use_register: multi_use_register,
     address_select: id_instruction[2:0],
+    memory_read: memory_read,
     memory_write: memory_write,
     memory_io_type: memory_io_type,
     memory_io_unsigned: memory_io_unsigned,
@@ -187,7 +189,6 @@ module id_stage(
     source2_is_unsigned: source2_is_unsigned,
     source1_is_program_count: source1_is_program_count,
     source1_is_shift_amount: source1_is_shift_amount,
-    is_load_operation: is_load_operation,
     multiply_valid: multiply_valid,
     divide_valid: divide_valid,
     multiply_divide_signed: multiply_divide_signed,
@@ -360,9 +361,9 @@ module id_stage(
   assign destination_is_register31 = instruction_bgezal | instruction_bltzal | instruction_jal | instruction_jalr;
   assign detination_is_multi_use = instruction_addi | instruction_addiu | instruction_andi | instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lui | instruction_lw | | instruction_lwl | instruction_lwr | instruction_mfc0 | instruction_ori | instruction_slti | instruction_sltiu | instruction_xori;
   assign register_write = ~instruction_beq & ~instruction_bgez & ~instruction_bgtz & ~instruction_blez & ~instruction_bltz & ~instruction_bne & ~instruction_break & ~instruction_div & ~instruction_divu & ~instruction_eret & ~instruction_j & ~instruction_jr & ~instruction_mtc0 & ~instruction_mthi & ~instruction_mtlo & ~instruction_mult & ~instruction_multu & ~instruction_sb & ~instruction_sh & ~instruction_sw & ~instruction_swl & ~instruction_swr & ~instruction_syscall;
+  assign memory_read = instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lw | instruction_lwl | instruction_lwr;
   assign memory_write = instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
   assign memory_io_unsigned = instruction_lbu | instruction_lhu;
-  assign is_load_operation = instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lw | instruction_lwl | instruction_lwr;
   assign is_jump_operation = instruction_beq | instruction_bgez | instruction_bgezal | instruction_bgtz | instruction_blez | instruction_bltz | instruction_bltzal | instruction_bne | instruction_j | instruction_jal | instruction_jalr | instruction_jr;
   assign multi_use_register_is_used = instruction_add | instruction_addu | instruction_and | instruction_beq | instruction_bne | instruction_div | instruction_divu | instruction_mult | instruction_multu | instruction_nor | instruction_or | instruction_sll | instruction_sllv | instruction_slt | instruction_sltu | instruction_sra | instruction_srav | instruction_srl | instruction_srlv | instruction_sub | instruction_subu | instruction_sb | instruction_sh | instruction_sw | instruction_swl | instruction_swr;
   assign do_overflow_check = instruction_add | instruction_addi | instruction_sub;

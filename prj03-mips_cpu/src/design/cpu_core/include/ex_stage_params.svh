@@ -34,6 +34,7 @@ package ex_stage_params;
     logic is_load_byte;
     logic memory_io_unsigned;
     logic result_is_from_memory;
+    logic memory_write;
     logic multiply_valid;
     multiplier_params::multiply_result_bus_t multiply_result;
     logic divide_valid;
