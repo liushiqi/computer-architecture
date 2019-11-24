@@ -47,6 +47,8 @@ module if_stage(
   program_count_t program_count_cache;
   program_count_t real_program_count;
   reg instruction_cache_valid;
+  reg instruction_waiting;
+  reg instruction_ignore;
   cpu_data_t instruction_cache;
   assign real_program_count = program_count_cache_valid ? program_count_cache : next_program_count;
 
@@ -63,10 +65,10 @@ module if_stage(
   };
 
   // pre-if stage
-  assign to_if_valid = ~reset;
+  assign to_if_valid = !reset;
   assign sequence_program_count = if_program_count + 3'h4;
   assign next_program_count =
-    wb_exception_bus.exception_valid ? 32'hbfc00380 :
+    wb_exception_bus.exception_valid ? 32'hbfc0037c :
     wb_exception_bus.eret_flush ? cp0_to_if_data_bus.exception_address :
     id_to_if_branch_bus.taken ? id_to_if_branch_bus.target : sequence_program_count;
 
@@ -86,8 +88,18 @@ module if_stage(
     end
   end
 
+  always_ff @(posedge clock) begin
+    if (reset) begin
+      instruction_waiting <= 1'b0;
+    end else if (instruction_ram_data_ready) begin
+      instruction_waiting <= 1'b0;
+    end else if (instruction_ram_address_ready) begin
+      instruction_waiting <= 1'b1;
+    end
+  end
+
   // if stage
-  assign if_ready_go = (instruction_cache_valid || instruction_ram_data_ready) && instruction_ram_address_ready;
+  assign if_ready_go = ((instruction_cache_valid || (instruction_ram_data_ready && !instruction_ignore)) && instruction_ram_address_ready) || should_flush;
   assign if_allow_in = !if_valid || (if_ready_go && id_allow_in);
   assign if_to_id_valid = if_valid && if_ready_go;
   always_ff @(posedge clock) begin
@@ -101,7 +113,7 @@ module if_stage(
   always_ff @(posedge clock) begin
     if (reset) begin
       if_program_count <= 32'hbfbffffc;  //trick: to make nextpc be 0xbfc00000 during reset
-    end if (to_if_valid && if_allow_in) begin
+    end else if (to_if_valid && if_allow_in) begin
       if_program_count <= real_program_count;
     end
   end
@@ -111,13 +123,23 @@ module if_stage(
       instruction_cache_valid <= 1'b0;
     end else if (if_ready_go && id_allow_in) begin
       instruction_cache_valid <= 1'b0;
-    end else if (instruction_ram_data_ready) begin
+    end else if (instruction_ram_data_ready && !instruction_ignore) begin
       instruction_cache_valid <= 1'b1;
     end
   end
 
   always_ff @(posedge clock) begin
-    if (instruction_ram_data_ready) begin
+    if (reset) begin
+      instruction_ignore <= 1'b0;
+    end else if (instruction_ram_data_ready) begin
+      instruction_ignore <= 1'b0;
+    end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
+      instruction_ignore <= 1'b1;
+    end
+  end
+
+  always_ff @(posedge clock) begin
+    if (instruction_ram_data_ready && !instruction_ignore) begin
       instruction_cache <= instruction_ram_read_data;
     end
   end
@@ -128,7 +150,7 @@ module if_stage(
   assign exception_code = interrupt ? 5'h00 : address_exception ? 5'h04 : 5'h00;
   assign should_flush = if_have_exception_backwards || if_have_exception;
 
-  assign instruction_ram_request = wb_exception_bus.exception_valid || wb_exception_bus.eret_flush || !should_flush;
+  assign instruction_ram_request = !instruction_waiting && id_allow_in && (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush || !should_flush);
   assign instruction_ram_write = 1'b0;
   assign instruction_ram_size = 2'b10;
   assign instruction_ram_address = real_program_count;

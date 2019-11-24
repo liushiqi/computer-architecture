@@ -88,7 +88,7 @@ module io_state(
     previous_write_data: from_ex_data.alu_result
   };
 
-  assign io_ready_go = !should_flush && (!from_ex_data.divide_valid || ex_to_io_bus.divide_result_valid) && (!from_ex_data.result_is_from_memory || (data_ram_data_ready && pending_load_count == 32'b0));
+  assign io_ready_go = should_flush || (!from_ex_data.divide_valid || ex_to_io_bus.divide_result_valid) && (!from_ex_data.result_is_from_memory || (data_ram_data_ready && pending_load_count == 32'b0));
   assign io_allow_in = !io_valid || io_ready_go && wb_allow_in;
   assign io_to_wb_valid = io_valid && io_ready_go;
   always_ff @(posedge clock) begin

@@ -490,7 +490,7 @@ module id_stage(
       (instruction_blez && ~source_register_is_positive) ||
       ((instruction_bltz || instruction_bltzal) && source_register_is_negative) ||
       (instruction_bne && !source_registers_are_equal) ||
-      instruction_j || instruction_jal || instruction_jalr || instruction_jr) && id_valid;
+      instruction_j || instruction_jal || instruction_jalr || instruction_jr) && id_valid && id_ready_go;
   assign branch_target =
     (instruction_beq || instruction_bgez || instruction_bgezal || instruction_bgtz || instruction_blez || instruction_bltz || instruction_bltzal || instruction_bne) ?
       (if_to_id_bus.program_count + {{14{immediate[15]}}, immediate[15:0], 2'b0}) :
