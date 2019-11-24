@@ -112,7 +112,7 @@ module io_state(
       pending_load_count <= 32'b0;
     end else if (from_ex_data.memory_write && io_valid && !should_flush) begin
       pending_load_count <= pending_load_count + 1;
-    end else if (data_ram_data_ready && pending_load_count != 32'b0 && !should_flush) begin
+    end else if (data_ram_data_ready && pending_load_count != 32'b0) begin
       pending_load_count <= pending_load_count - 1;
     end
   end
