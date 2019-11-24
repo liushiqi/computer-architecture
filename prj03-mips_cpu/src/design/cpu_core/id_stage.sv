@@ -246,7 +246,7 @@ module id_stage(
   end
 
   assign id_have_exception_forwards = (from_if_data.exception_valid || id_have_exception || instruction_eret) && id_valid;
-  assign reserved_instruction = 
+  assign reserved_instruction =
     ~(instruction_add | instruction_addi | instruction_addiu | instruction_addu | instruction_and | instruction_andi | instruction_beq | instruction_bgez | instruction_bgezal | instruction_bgtz | instruction_blez |
       instruction_bltz | instruction_bltzal | instruction_bne | instruction_break | instruction_div | instruction_divu | instruction_eret | instruction_j | instruction_jal | instruction_jalr | instruction_jr |
       instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lui | instruction_lw | instruction_lwl | instruction_lwr | instruction_mfc0 | instruction_mfhi | instruction_mflo |

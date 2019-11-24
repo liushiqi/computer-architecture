@@ -7,25 +7,25 @@ All rights reserved.
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, this 
+1. Redistributions of source code must retain the above copyright notice, this
 list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, 
+2. Redistributions in binary form must reproduce the above copyright notice,
 this list of conditions and the following disclaimer in the documentation and/or
 other materials provided with the distribution.
 
-3. Neither the name of Loongson Technology Corporation Limited nor the names of 
-its contributors may be used to endorse or promote products derived from this 
+3. Neither the name of Loongson Technology Corporation Limited nor the names of
+its contributors may be used to endorse or promote products derived from this
 software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 DISCLAIMED. IN NO EVENT SHALL LOONGSON TECHNOLOGY CORPORATION LIMITED BE LIABLE
-TO ANY PARTY FOR DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+TO ANY PARTY FOR DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
 LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------------
@@ -33,10 +33,10 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //*************************************************************************
 //   > File Name   : confreg.v
-//   > Description : Control module of 
+//   > Description : Control module of
 //                   16 red leds, 2 green/red leds,
-//                   7-segment display, 
-//                   switchs, 
+//                   7-segment display,
+//                   switchs,
 //                   key board,
 //                   bottom STEP,
 //                   timer.
@@ -44,38 +44,38 @@ THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //   > Author      : LOONGSON
 //   > Date        : 2017-08-04
 //*************************************************************************
-`define RANDOM_SEED {7'b1010101,16'hFFFF}
+`define RANDOM_SEED {7'b1010101,16'h000F}
 
-`define CR0_ADDR       16'h8000   //32'hbfaf_8000 
-`define CR1_ADDR       16'h8004   //32'hbfaf_8004 
-`define CR2_ADDR       16'h8008   //32'hbfaf_8008 
-`define CR3_ADDR       16'h800c   //32'hbfaf_800c 
-`define CR4_ADDR       16'h8010   //32'hbfaf_8010 
-`define CR5_ADDR       16'h8014   //32'hbfaf_8014 
-`define CR6_ADDR       16'h8018   //32'hbfaf_8018 
-`define CR7_ADDR       16'h801c   //32'hbfaf_801c 
+`define CR0_ADDR       16'h8000   //32'hbfaf_8000
+`define CR1_ADDR       16'h8004   //32'hbfaf_8004
+`define CR2_ADDR       16'h8008   //32'hbfaf_8008
+`define CR3_ADDR       16'h800c   //32'hbfaf_800c
+`define CR4_ADDR       16'h8010   //32'hbfaf_8010
+`define CR5_ADDR       16'h8014   //32'hbfaf_8014
+`define CR6_ADDR       16'h8018   //32'hbfaf_8018
+`define CR7_ADDR       16'h801c   //32'hbfaf_801c
 
-`define LED_ADDR       16'hf000   //32'hbfaf_f000 
-`define LED_RG0_ADDR   16'hf004   //32'hbfaf_f004 
-`define LED_RG1_ADDR   16'hf008   //32'hbfaf_f008 
-`define NUM_ADDR       16'hf010   //32'hbfaf_f010 
-`define SWITCH_ADDR    16'hf020   //32'hbfaf_f020 
+`define LED_ADDR       16'hf000   //32'hbfaf_f000
+`define LED_RG0_ADDR   16'hf004   //32'hbfaf_f004
+`define LED_RG1_ADDR   16'hf008   //32'hbfaf_f008
+`define NUM_ADDR       16'hf010   //32'hbfaf_f010
+`define SWITCH_ADDR    16'hf020   //32'hbfaf_f020
 `define BTN_KEY_ADDR   16'hf024   //32'hbfaf_f024
 `define BTN_STEP_ADDR  16'hf028   //32'hbfaf_f028
-`define SW_INTER_ADDR  16'hf02c   //32'hbfaf_f02c 
-`define TIMER_ADDR     16'he000   //32'hbfaf_e000 
+`define SW_INTER_ADDR  16'hf02c   //32'hbfaf_f02c
+`define TIMER_ADDR     16'he000   //32'hbfaf_e000
 
 `define IO_SIMU_ADDR      16'hffec  //32'hbfaf_ffec
 `define VIRTUAL_UART_ADDR 16'hfff0  //32'hbfaf_fff0
-`define SIMU_FLAG_ADDR    16'hfff4  //32'hbfaf_fff4 
+`define SIMU_FLAG_ADDR    16'hfff4  //32'hbfaf_fff4
 `define OPEN_TRACE_ADDR   16'hfff8  //32'hbfaf_fff8
 `define NUM_MONITOR_ADDR  16'hfffc  //32'hbfaf_fffc
 module confreg
 #(parameter SIMULATION=1'b0)
-(                     
-    input             aclk,          
+(
+    input             aclk,
     input             timer_clk,
-    input             aresetn,     
+    input             aresetn,
     // read and write from cpu
     //ar
     input  [3 :0] arid   ,
@@ -123,15 +123,15 @@ module confreg
     output     [4 :0] ram_random_mask  ,
 
     // read and write to device on board
-    output     [15:0] led,          
-    output     [1 :0] led_rg0,      
-    output     [1 :0] led_rg1,      
-    output reg [7 :0] num_csn,      
-    output reg [6 :0] num_a_g,      
-    input      [7 :0] switch,       
-    output     [3 :0] btn_key_col,  
-    input      [3 :0] btn_key_row,  
-    input      [1 :0] btn_step      
+    output     [15:0] led,
+    output     [1 :0] led_rg0,
+    output     [1 :0] led_rg1,
+    output reg [7 :0] num_csn,
+    output reg [6 :0] num_a_g,
+    input      [7 :0] switch,
+    output     [3 :0] btn_key_col,
+    input      [3 :0] btn_key_row,
+    input      [1 :0] btn_step
 );
     reg  [31:0] cr0;
     reg  [31:0] cr1;
@@ -156,7 +156,7 @@ module confreg
     reg  [7 :0] virtual_uart_data;
     reg         open_trace;
     reg         num_monitor;
-                        
+
 //--------------------------{axi interface}begin-------------------------//
     reg busy,write,R_or_W;
     reg s_wready;
@@ -174,14 +174,14 @@ module confreg
     reg [31:0] buf_addr;
     reg [7 :0] buf_len;
     reg [2 :0] buf_size;
-    
+
     always @(posedge aclk)
     begin
         if(~aresetn) busy <= 1'b0;
         else if(ar_enter|aw_enter) busy <= 1'b1;
         else if(r_retire|b_retire) busy <= 1'b0;
     end
-    
+
     always @(posedge aclk)
     begin
         if(~aresetn)
@@ -202,7 +202,7 @@ module confreg
             buf_size    <= ar_enter ? arsize : awsize ;
         end
     end
-    
+
     reg conf_wready_reg;
     assign wready = conf_wready_reg;
     always@(posedge aclk)
@@ -211,7 +211,7 @@ module confreg
         else if(aw_enter       ) conf_wready_reg <= 1'b1;
         else if(w_enter & wlast) conf_wready_reg <= 1'b0;
     end
-    
+
     // read data has one cycle delay
     reg [31:0] conf_rdata_reg;
     reg        conf_rvalid_reg;
@@ -273,7 +273,7 @@ module confreg
 
     reg conf_bvalid_reg;
     assign bvalid = conf_bvalid_reg;
-    always @(posedge aclk)   
+    always @(posedge aclk)
     begin
         if     (~aresetn) conf_bvalid_reg <= 1'b0;
         else if(w_enter ) conf_bvalid_reg <= 1'b1;
@@ -330,16 +330,16 @@ begin
     if (!aresetn)
     begin
         write_timer_begin <= 1'b0;
-    end 
+    end
     else if (write_timer)
     begin
         write_timer_begin <= 1'b1;
         conf_wdata_r      <= conf_wdata;
-    end 
+    end
     else if (write_timer_end_r2)
     begin
         write_timer_begin <= 1'b0;
-    end 
+    end
 
     write_timer_end_r1 <= write_timer_begin_r2;
     write_timer_end_r2 <= write_timer_end_r1;
@@ -452,7 +452,7 @@ wire [15:0] led_r_n;
 assign led_r_n = ~switch_led;
 
 reg [22:0] pseudo_random_23;
-reg        no_mask;     //if led_r_n is all 1, no mask 
+reg        no_mask;     //if led_r_n is all 1, no mask
 reg        short_delay; //memory long delay
 always @ (posedge aclk)
 begin
@@ -535,7 +535,7 @@ begin
     begin
         key_flag <= 1'd0;
     end
-    else if (key_sample && state_count[3]) 
+    else if (key_sample && state_count[3])
     begin
         key_flag <= 1'b0;
     end
@@ -642,7 +642,7 @@ begin
     begin
         step0_flag <= 1'd0;
     end
-    else if (step0_sample) 
+    else if (step0_sample)
     begin
         step0_flag <= 1'b0;
     end
@@ -683,7 +683,7 @@ begin
     begin
         step1_flag <= 1'd0;
     end
-    else if (step1_sample) 
+    else if (step1_sample)
     begin
         step1_flag <= 1'b0;
     end
@@ -772,11 +772,11 @@ begin
 end
 //scan data
 reg [3:0] scan_data;
-always @ ( posedge aclk )  
+always @ ( posedge aclk )
 begin
     if ( !aresetn )
     begin
-        scan_data <= 32'd0;  
+        scan_data <= 32'd0;
         num_csn   <= 8'b1111_1111;
     end
     else
