@@ -189,17 +189,6 @@ if {${command} == "open"} {
 } elseif {${command} == "bitstream" || ${command} == "implementation"} {
   generate_bitstream
 } elseif {${command} == "board"} {
-  set sources [get_files_in_dir ${source_path}]
-  set max_time 0
-  foreach file $sources {
-    set time [file mtime $file]
-    if {$time > max_time} {
-      set max_time $time
-    }
-  }
-  if {![file exists ${bit_file}] || [file mtime ${bit_file}] < $max_time} {
-    generate_bitstream
-  }
   open_hw
   connect_hw_server
   open_hw_target
