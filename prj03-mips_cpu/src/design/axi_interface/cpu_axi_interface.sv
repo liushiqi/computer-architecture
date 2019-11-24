@@ -4,6 +4,7 @@ package axi_params;
   typedef enum logic [31:0] {
     DATA_WAITING,
     GETTING_DATA_RAM_READ_ADDRESS,
+    WAITING_INSTRUCTION_RAM,
     SENDING_DATA_RAM_READ_ADDRESS,
     GETTING_DATA_RAM_READ_DATA,
     SENDING_DATA_RAM_READ_DATA,
@@ -17,6 +18,7 @@ package axi_params;
   typedef enum logic [31:0] {
     INSTRUCTION_WAITING,
     GETTING_INSTRUCTION_RAM_ADDRESS,
+    WAITING_DATA_RAM,
     SENDING_INSTRUCTION_RAM_ADDRESS,
     GETTING_INSTRUCTION_RAM_DATA,
     SENDING_INSTRUCTION_RAM_DATA
@@ -171,7 +173,18 @@ module cpu_axi_interface (
     end
     GETTING_DATA_RAM_READ_ADDRESS: begin
       if (data_ram_request) begin
-        next_data_state = data_state.next;
+        if (instruction_state == SENDING_DATA_RAM_READ_ADDRESS) begin
+          next_data_state = WAITING_INSTRUCTION_RAM;
+        end else begin
+          next_data_state = SENDING_DATA_RAM_READ_ADDRESS;
+        end
+      end else begin
+        next_data_state = data_state;
+      end
+    end
+    WAITING_INSTRUCTION_RAM: begin
+      if (instruction_state == GETTING_INSTRUCTION_RAM_DATA) begin
+        next_data_state = SENDING_DATA_RAM_READ_ADDRESS;
       end else begin
         next_data_state = data_state;
       end
@@ -280,7 +293,18 @@ module cpu_axi_interface (
     end
     GETTING_INSTRUCTION_RAM_ADDRESS: begin
       if (instruction_ram_request) begin
-        next_instruction_state = instruction_state.next;
+        if (data_state == GETTING_DATA_RAM_READ_ADDRESS || data_state == SENDING_DATA_RAM_READ_ADDRESS) begin
+          next_instruction_state = WAITING_DATA_RAM;
+        end else begin
+          next_instruction_state = SENDING_INSTRUCTION_RAM_ADDRESS;
+        end
+      end else begin
+        next_instruction_state = instruction_state;
+      end
+    end
+    WAITING_DATA_RAM: begin
+      if (data_state == GETTING_DATA_RAM_READ_DATA) begin
+        next_instruction_state = SENDING_INSTRUCTION_RAM_ADDRESS;
       end else begin
         next_instruction_state = instruction_state;
       end
