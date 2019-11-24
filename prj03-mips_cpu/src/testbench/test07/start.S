@@ -2,9 +2,9 @@
 #include <regdef.h>
 #include <ucas_cde.h>
 
-#define lab3  0
-#define lab6  0
-#define lab7  0
+#define lab3  1
+#define lab6  1
+#define lab7  1
 #define lab8  1
 #define lab9  1
 
