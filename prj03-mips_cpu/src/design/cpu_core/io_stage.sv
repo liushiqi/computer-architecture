@@ -110,9 +110,9 @@ module io_state(
   always_ff @(posedge clock) begin
     if (reset) begin
       pending_load_count <= 32'b0;
-    end else if (from_ex_data.memory_write && io_valid) begin
+    end else if (from_ex_data.memory_write && io_valid && !should_flush) begin
       pending_load_count <= pending_load_count + 1;
-    end else if (data_ram_data_ready && pending_load_count != 32'b0) begin
+    end else if (data_ram_data_ready && pending_load_count != 32'b0 && !should_flush) begin
       pending_load_count <= pending_load_count - 1;
     end
   end

@@ -103,7 +103,7 @@ module ex_stage(
     write_data: alu_result
   };
 
-  assign ex_ready_go = ~(from_id_data.memory_write || result_is_from_memory) || data_ram_address_ready;
+  assign ex_ready_go = ~data_ram_request || data_ram_address_ready;
   assign ex_allow_in = !ex_valid || ex_ready_go && io_allow_in;
   assign ex_to_io_valid = ex_valid && ex_ready_go;
   always_ff @(posedge clock) begin
@@ -144,7 +144,7 @@ module ex_stage(
     .alu_overflow
   );
 
-  assign data_ram_request = (from_id_data.memory_write || from_id_data.memory_read) && !should_flush;
+  assign data_ram_request = (from_id_data.memory_write || from_id_data.memory_read) && !should_flush && ex_valid;
   assign data_ram_write = from_id_data.memory_write;
   assign data_ram_size =
     from_id_data.memory_io_type[0] ? 2'b00 :
