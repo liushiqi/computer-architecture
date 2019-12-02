@@ -94,7 +94,7 @@ begin
         wait_cnt <= wait_cnt - 1'b1;
     end
 end
-tlb #(.TLBNUM(16)) tlb_0
+tlb_adapter #(.TLBNUM(16)) tlb_0
 (
     .clk(clk_g),
     .s0_vpn2(s0_vpn2),
