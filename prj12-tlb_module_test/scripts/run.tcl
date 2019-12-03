@@ -4,7 +4,7 @@ set part_name xc7a200tfbg676-2
 
 set project_name mips_cpu
 
-set design_top tlb_top
+set design_top tlb_test
 set simulation_top tlb_testbench
 
 set script_path [file dirname [info script]]

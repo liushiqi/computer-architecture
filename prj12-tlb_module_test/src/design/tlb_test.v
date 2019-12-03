@@ -1,5 +1,5 @@
 //the test include 2 parts : write / read & search.
-module tlb_top #
+module tlb_test #
 (
     parameter TLBNUM=16
    ,parameter SIMULATION=1'b0
@@ -94,7 +94,7 @@ begin
         wait_cnt <= wait_cnt - 1'b1;
     end
 end
-tlb_adapter #(.TLBNUM(16)) tlb_0
+tlb_adapter #(.TLB_NUM(16)) tlb_0
 (
     .clk(clk_g),
     .s0_vpn2(s0_vpn2),

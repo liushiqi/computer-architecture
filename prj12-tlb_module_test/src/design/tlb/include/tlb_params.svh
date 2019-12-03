@@ -5,7 +5,7 @@ package tlb_params;
   parameter TLB_NUM = 16;
 
   typedef struct packed {
-    logic page_frame_number;
+    logic [19:0] page_frame_number;
     logic [2:0] is_cached;
     logic is_dirty;
     logic is_valid;
@@ -23,7 +23,7 @@ package tlb_params;
 
   typedef struct packed {
     logic [18:0] virtual_page_number;
-    logic is_odd_page;
+    logic is_even_page;
     logic [7:0] asid;
   } search_request_t;
 
