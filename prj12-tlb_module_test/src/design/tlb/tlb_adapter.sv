@@ -61,39 +61,39 @@ module tlb_adapter #(
 
   assign request1 = '{
     virtual_page_number: s0_vpn2,
-    is_even_page: s0_odd_page,
+    is_odd_page: s0_odd_page,
     asid: s0_asid
   };
 
-  assign '{
+  assign {
     s0_found,
     s0_index,
-    '{s0_pfn, s0_c, s0_d, s0_v}
+    {s0_pfn, s0_c, s0_d, s0_v}
   } = responce1;
 
   assign request2 = '{
     virtual_page_number: s1_vpn2,
-    is_even_page: s1_odd_page,
+    is_odd_page: s1_odd_page,
     asid: s1_asid
   };
 
-  assign '{
+  assign {
     s1_found,
     s1_index,
-    '{s1_pfn, s1_c, s1_d, s1_v}
+    {s1_pfn, s1_c, s1_d, s1_v}
   } = responce2;
 
   assign write_data = '{
     virtual_page_number: w_vpn2,
     asid: w_asid,
     is_global: w_g,
-    odd_page: '{
+    even_page: '{
       page_frame_number: w_pfn0,
       is_cached: w_c0,
       is_dirty: w_d0,
       is_valid: w_v0
     },
-    even_page: '{
+    odd_page: '{
       page_frame_number: w_pfn1,
       is_cached: w_c1,
       is_dirty: w_d1,
@@ -101,12 +101,12 @@ module tlb_adapter #(
     }
   };
 
-  assign '{
+  assign {
     r_vpn2,
     r_asid,
     r_g,
-    '{r_pfn0, r_c0, r_d0, r_v0},
-    '{r_pfn1, r_c1, r_d1, r_v1}
+    {r_pfn0, r_c0, r_d0, r_v0},
+    {r_pfn1, r_c1, r_d1, r_v1}
   } = read_data;
 
   tlb u_tlb (

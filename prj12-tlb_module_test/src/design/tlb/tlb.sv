@@ -59,11 +59,11 @@ module tlb (
     for (genvar i = 0; i < TLB_NUM; i++) begin
       assign matched1[i] = request1.virtual_page_number == entries[i].virtual_page_number && (request1.asid == entries[i].asid || entries[i].is_global);
       assign match_index1[i] = ({$clog2(TLB_NUM){matched1[i]}} & i) | match_index1[i + 1];
-      assign match_entry1[i] = ({$bits(entry_t){matched1[i] & ~request1.is_even_page}} & entries[i].odd_page) | ({$bits(entry_t){matched1[i] & request1.is_even_page}} & entries[i].even_page) | match_entry1[i + 1];
+      assign match_entry1[i] = ({$bits(entry_t){matched1[i] & request1.is_odd_page}} & entries[i].odd_page) | ({$bits(entry_t){matched1[i] & ~request1.is_odd_page}} & entries[i].even_page) | match_entry1[i + 1];
 
       assign matched2[i] = request2.virtual_page_number == entries[i].virtual_page_number && (request2.asid == entries[i].asid || entries[i].is_global);
       assign match_index2[i] = ({$clog2(TLB_NUM){matched2[i]}} & i) | match_index2[i + 1];
-      assign match_entry2[i] = ({$bits(entry_t){matched2[i] & ~request2.is_even_page}} & entries[i].odd_page) | ({$bits(entry_t){matched2[i] & request2.is_even_page}} & entries[i].even_page) | match_entry2[i + 1];
+      assign match_entry2[i] = ({$bits(entry_t){matched2[i] & request2.is_odd_page}} & entries[i].odd_page) | ({$bits(entry_t){matched2[i] & ~request2.is_odd_page}} & entries[i].even_page) | match_entry2[i + 1];
     end
   endgenerate
 

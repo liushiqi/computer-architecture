@@ -15,15 +15,15 @@ package tlb_params;
     logic [18:0] virtual_page_number;
     logic [7:0] asid;
     logic is_global;
-    entry_t odd_page;
     entry_t even_page;
+    entry_t odd_page;
   } tlb_request_t;
 
   typedef tlb_request_t tlb_entry_t;
 
   typedef struct packed {
     logic [18:0] virtual_page_number;
-    logic is_even_page;
+    logic is_odd_page;
     logic [7:0] asid;
   } search_request_t;
 
