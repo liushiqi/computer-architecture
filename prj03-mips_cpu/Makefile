@@ -1,5 +1,5 @@
 PARAMS := ""
-TESTBENCH = 7
+TESTBENCH = 8
 MEMORY_GAME = 0
 
 TESTBENCH_BASE_DIR = src/testbench

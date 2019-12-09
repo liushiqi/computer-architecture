@@ -149,6 +149,9 @@ module id_stage(
   wire instruction_swl;
   wire instruction_swr;
   wire instruction_syscall;
+  wire instruction_tlbp;
+  wire instruction_tlbr;
+  wire instruction_tlbwi;
   wire instruction_xor;
   wire instruction_xori;
 
@@ -204,7 +207,10 @@ module id_stage(
     do_overflow_check: do_overflow_check,
     exception_code: exception_code,
     is_address_fault: from_if_data.is_address_fault,
-    badvaddr_value: from_if_data.badvaddr_value
+    badvaddr_value: from_if_data.badvaddr_value,
+    tlb_read: instruction_tlbr,
+    tlb_write: instruction_tlbwi,
+    tlb_probe: instruction_tlbp
   };
 
   wire [4:0] source_register_0_if_unused;
@@ -252,7 +258,7 @@ module id_stage(
       instruction_lb | instruction_lbu | instruction_lh | instruction_lhu | instruction_lui | instruction_lw | instruction_lwl | instruction_lwr | instruction_mfc0 | instruction_mfhi | instruction_mflo |
       instruction_mtc0 | instruction_mthi | instruction_mtlo | instruction_mult | instruction_multu | instruction_nor | instruction_or | instruction_ori | instruction_sb | instruction_sh | instruction_sll |
       instruction_sllv | instruction_slt | instruction_slti | instruction_sltiu | instruction_sltu | instruction_sra | instruction_srav | instruction_srl | instruction_srlv | instruction_sub | instruction_subu |
-      instruction_sw | instruction_swl | instruction_swr | instruction_syscall | instruction_xor | instruction_xori);
+      instruction_sw | instruction_swl | instruction_swr | instruction_syscall | instruction_tlbp | instruction_tlbr | instruction_tlbwi | instruction_xor | instruction_xori);
   assign id_have_exception = reserved_instruction | instruction_syscall | instruction_break;
   assign exception_code = from_if_data.exception_valid ? from_if_data.exception_code : reserved_instruction ? 5'h0a : instruction_break ? 5'h09 : instruction_syscall ? 5'h8 : 5'h00;
 
@@ -331,6 +337,9 @@ module id_stage(
   assign instruction_swl = operation_code_decoded[6'h2a];
   assign instruction_swr = operation_code_decoded[6'h2e];
   assign instruction_syscall = operation_code_decoded[6'h00] & function_code_decoded[6'h0c];
+  assign instruction_tlbp = operation_code_decoded[6'h10] & function_code_decoded[6'h08] & source_register_decoded[5'h10] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_tlbr = operation_code_decoded[6'h10] & function_code_decoded[6'h01] & source_register_decoded[5'h10] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
+  assign instruction_tlbwi = operation_code_decoded[6'h10] & function_code_decoded[6'h02] & source_register_decoded[5'h10] & multi_use_register_decoded[5'h00] & destination_register_decoded[5'h00] & shift_amount_decoded[5'h00];
   assign instruction_xor = operation_code_decoded[6'h00] & function_code_decoded[6'h26] & shift_amount_decoded[5'h00];
   assign instruction_xori = operation_code_decoded[6'h0e];
 

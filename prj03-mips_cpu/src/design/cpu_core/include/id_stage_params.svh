@@ -45,6 +45,9 @@ package id_stage_params;
     logic [4:0] exception_code;
     logic is_address_fault;
     address_t badvaddr_value;
+    logic tlb_read;
+    logic tlb_write;
+    logic tlb_probe;
   } id_to_ex_bus_t;
 
   typedef struct packed {

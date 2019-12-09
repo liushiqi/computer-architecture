@@ -6,6 +6,8 @@ module tlb (
   output tlb_params::search_result_t responce1,
   input tlb_params::search_request_t request2,
   output tlb_params::search_result_t responce2,
+  input tlb_params::search_request_t request3,
+  output tlb_params::search_result_t responce3,
   input write_enabled,
   input [$clog2(tlb_params::TLB_NUM) - 1:0] write_index,
   input tlb_params::tlb_request_t write_data,
@@ -43,6 +45,19 @@ module tlb (
   assign match_all_index2 = match_index2[0];
   assign match_all_entry2 = match_entry2[0];
 
+  wire [TLB_NUM - 1:0] matched3;
+  wire [$clog2(TLB_NUM) - 1:0] match_index3 [TLB_NUM + 1];
+  entry_t match_entry3 [TLB_NUM + 1];
+  wire matched_all3;
+  wire [$clog2(TLB_NUM) - 1:0] match_all_index3;
+  entry_t match_all_entry3;
+
+  assign match_index3[TLB_NUM] = {$clog2(TLB_NUM){1'b0}};
+  assign match_entry3[TLB_NUM] = '{20'b0, 2'b0, 1'b0, 1'b0};
+  assign matched_all3 = |matched3;
+  assign match_all_index3 = match_index3[0];
+  assign match_all_entry3 = match_entry3[0];
+
   assign responce1 = '{
     found: matched_all1,
     index: match_all_index1,
@@ -55,6 +70,12 @@ module tlb (
     entry: match_all_entry2
   };
 
+  assign responce3 = '{
+    found: matched_all3,
+    index: match_all_index3,
+    entry: match_all_entry3
+  };
+
   generate
     for (genvar i = 0; i < TLB_NUM; i++) begin
       assign matched1[i] = request1.virtual_page_number == entries[i].virtual_page_number && (request1.asid == entries[i].asid || entries[i].is_global);
@@ -64,6 +85,10 @@ module tlb (
       assign matched2[i] = request2.virtual_page_number == entries[i].virtual_page_number && (request2.asid == entries[i].asid || entries[i].is_global);
       assign match_index2[i] = ({$clog2(TLB_NUM){matched2[i]}} & i) | match_index2[i + 1];
       assign match_entry2[i] = ({$bits(entry_t){matched2[i] & request2.is_odd_page}} & entries[i].odd_page) | ({$bits(entry_t){matched2[i] & ~request2.is_odd_page}} & entries[i].even_page) | match_entry2[i + 1];
+
+      assign matched3[i] = request3.virtual_page_number == entries[i].virtual_page_number && (request3.asid == entries[i].asid || entries[i].is_global);
+      assign match_index3[i] = ({$clog2(TLB_NUM){matched3[i]}} & i) | match_index3[i + 1];
+      assign match_entry3[i] = ({$bits(entry_t){matched3[i] & request3.is_odd_page}} & entries[i].odd_page) | ({$bits(entry_t){matched3[i] & ~request3.is_odd_page}} & entries[i].even_page) | match_entry3[i + 1];
     end
   endgenerate
 

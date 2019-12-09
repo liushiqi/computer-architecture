@@ -91,7 +91,10 @@ module ex_stage(
     eret_flush: from_id_data.eret_flush,
     exception_code: exception_code,
     is_address_fault: from_id_data.is_address_fault | address_exception,
-    badvaddr_value: (from_id_data.is_address_fault ? from_id_data.badvaddr_value : address_exception ? alu_result : 32'b0)
+    badvaddr_value: (from_id_data.is_address_fault ? from_id_data.badvaddr_value : address_exception ? alu_result : 32'b0),
+    tlb_probe: from_id_data.tlb_probe,
+    tlb_read: from_id_data.tlb_read,
+    tlb_write: from_id_data.tlb_write
   };
 
   wire [4:0] backpass_address;

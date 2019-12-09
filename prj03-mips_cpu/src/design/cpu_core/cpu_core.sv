@@ -64,6 +64,18 @@ module cpu_core(
   coprocessor0_params::cp0_to_if_bus_t cp0_to_if_data_bus;
   cpu_data_t cp0_read_data;
 
+  tlb_params::search_request_t tlb_request1;
+  tlb_params::search_result_t tlb_responce1;
+  tlb_params::search_request_t tlb_request2;
+  tlb_params::search_result_t tlb_responce2;
+  tlb_params::search_request_t tlb_request3;
+  tlb_params::search_result_t tlb_responce3;
+  wire tlb_write_enabled;
+  wire [$clog2(tlb_params::TLB_NUM) - 1:0] tlb_write_index;
+  tlb_params::tlb_request_t tlb_write_data;
+  wire [$clog2(tlb_params::TLB_NUM) - 1:0] tlb_read_index;
+  tlb_params::tlb_request_t tlb_read_data;
+
   wire id_have_exception_forwards;
   wire ex_have_exception_forwards;
   wire io_have_exception_forwards;
@@ -197,6 +209,8 @@ module cpu_core(
     // exception bus
     .wb_exception_bus,
     .wb_have_exception_forwards,
+    // tlb
+    .tlb_write_enabled,
     // trace debug interface
     .debug_program_count,
     .debug_register_file_write_enabled,
@@ -210,6 +224,27 @@ module cpu_core(
     .wb_to_cp0_data_bus,
     .cp0_to_if_data_bus,
     .cp0_read_data,
+    .tlb_request(tlb_request3),
+    .tlb_responce(tlb_responce3),
+    .tlb_read_index,
+    .tlb_read_data,
+    .tlb_write_index,
+    .tlb_write_data,
     .hardware_interrupt
+  );
+
+  tlb u_tlb(
+    .clock,
+    .request1(tlb_request1),
+    .responce1(tlb_responce1),
+    .request2(tlb_request2),
+    .responce2(tlb_responce2),
+    .request3(tlb_request3),
+    .responce3(tlb_responce3),
+    .write_enabled(tlb_write_enabled),
+    .write_index(tlb_write_index),
+    .write_data(tlb_write_data),
+    .read_index(tlb_read_index),
+    .read_data(tlb_read_data)
   );
 endmodule: cpu_core

@@ -39,6 +39,9 @@ package wb_stage_params;
     logic [4:0] exception_code;
     logic is_address_fault;
     address_t badvaddr_value;
+    logic tlb_read;
+    logic tlb_write;
+    logic tlb_probe;
   } wb_to_cp0_bus_t;
 endpackage: wb_stage_params
 

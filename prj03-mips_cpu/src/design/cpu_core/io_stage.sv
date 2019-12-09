@@ -71,7 +71,10 @@ module io_state(
     eret_flush: from_ex_data.eret_flush,
     exception_code: exception_code,
     is_address_fault: from_ex_data.is_address_fault | address_exception,
-    badvaddr_value: (from_ex_data.is_address_fault ? from_ex_data.badvaddr_value : address_exception ? from_ex_data.memory_address : 32'b0)
+    badvaddr_value: (from_ex_data.is_address_fault ? from_ex_data.badvaddr_value : address_exception ? from_ex_data.memory_address : 32'b0),
+    tlb_probe: from_ex_data.tlb_probe,
+    tlb_read: from_ex_data.tlb_read,
+    tlb_write: from_ex_data.tlb_write
   };
 
   wire previous_valid;

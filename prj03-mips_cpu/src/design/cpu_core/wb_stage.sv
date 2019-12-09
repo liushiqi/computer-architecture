@@ -18,6 +18,8 @@ module wb_stage(
   // exception data
   output wb_stage_params::wb_exception_bus_t wb_exception_bus,
   output wire wb_have_exception_forwards,
+  // tlb
+  output tlb_write_enabled,
   // trace debug interface
   output cpu_core_params::program_count_t debug_program_count,
   output [3:0] debug_register_file_write_enabled,
@@ -54,8 +56,12 @@ module wb_stage(
     in_delay_slot: from_io_data.in_delay_slot,
     exception_code: from_io_data.exception_code,
     is_address_fault: from_io_data.is_address_fault,
-    badvaddr_value: from_io_data.badvaddr_value
+    badvaddr_value: from_io_data.badvaddr_value,
+    tlb_probe: from_io_data.tlb_probe,
+    tlb_read: from_io_data.tlb_read,
+    tlb_write: from_io_data.tlb_write
   };
+  assign tlb_write_enabled = from_io_data.tlb_write;
 
   assign wb_to_id_back_pass_bus = '{
     valid: from_io_data.register_file_write_enabled & wb_valid,

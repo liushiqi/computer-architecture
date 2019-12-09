@@ -52,6 +52,9 @@ package ex_stage_params;
     logic [4:0] exception_code;
     logic is_address_fault;
     address_t badvaddr_value;
+    logic tlb_read;
+    logic tlb_write;
+    logic tlb_probe;
   } ex_to_io_bus_t;
 endpackage: ex_stage_params
 

@@ -6,6 +6,12 @@ module coprocessor0(
   input wb_stage_params::wb_to_cp0_bus_t wb_to_cp0_data_bus,
   output coprocessor0_params::cp0_to_if_bus_t cp0_to_if_data_bus,
   output cpu_core_params::cpu_data_t cp0_read_data,
+  output tlb_params::search_request_t tlb_request,
+  input tlb_params::search_result_t tlb_responce,
+  output [$clog2(tlb_params::TLB_NUM) - 1:0] tlb_write_index,
+  output tlb_params::tlb_request_t tlb_write_data,
+  output [$clog2(tlb_params::TLB_NUM) - 1:0] tlb_read_index,
+  input tlb_params::tlb_request_t tlb_read_data,
   input [5:0] hardware_interrupt
 );
   import coprocessor0_params::*;
@@ -15,19 +21,158 @@ module coprocessor0(
   decoder #(.INPUT_WIDTH(5)) u_address_register_decoder(.in(wb_to_cp0_data_bus.address_register), .out(address_register_decoded));
   decoder #(.INPUT_WIDTH(3)) u_address_select_decoder(.in(wb_to_cp0_data_bus.address_select), .out(address_select_decoded));
 
+  wire address_index;
+  wire address_entrylo0;
+  wire address_entrylo1;
   wire address_badvaddr;
   wire address_count;
+  wire address_entryhi;
   wire address_compare;
   wire address_status;
   wire address_cause;
   wire address_epc;
 
+  assign address_index = address_register_decoded[5'h00] & address_select_decoded[3'h0];
+  assign address_entrylo0 = address_register_decoded[5'h02] & address_select_decoded[3'h0];
+  assign address_entrylo1 = address_register_decoded[5'h03] & address_select_decoded[3'h0];
   assign address_badvaddr = address_register_decoded[5'h08] & address_select_decoded[3'h0];
   assign address_count = address_register_decoded[5'h09] & address_select_decoded[3'h0];
+  assign address_entryhi = address_register_decoded[5'h0a] & address_select_decoded[3'h0];
   assign address_compare = address_register_decoded[5'h0b] & address_select_decoded[3'h0];
   assign address_status = address_register_decoded[5'h0c] & address_select_decoded[3'h0];
   assign address_cause = address_register_decoded[5'h0d] & address_select_decoded[3'h0];
   assign address_epc = address_register_decoded[5'h0e] & address_select_decoded[3'h0];
+
+  index_t index_value;
+  index_t index_write_value;
+  reg index_probe;
+  reg [$clog2(tlb_params::TLB_NUM) - 1:0] index_index;
+  assign index_write_value = index_t'(wb_to_cp0_data_bus.write_data);
+  assign index_value = '{
+    probe: index_probe,
+    zero: 0,
+    index: index_index
+  };
+  always_ff @(posedge clock) begin
+    if (reset) begin
+      index_probe <= 1'b0;
+    end else if (wb_to_cp0_data_bus.tlb_probe && !tlb_responce.found) begin
+      index_probe <= 1'b1;
+    end else if (wb_to_cp0_data_bus.tlb_probe && tlb_responce) begin
+      index_probe <= 1'b0;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.tlb_probe && tlb_responce.found) begin
+      index_index <= tlb_responce.index;
+    end else if (wb_to_cp0_data_bus.write_enabled && address_index) begin
+      index_index <= index_write_value.index;
+    end
+  end
+
+  entry_lo_t entrylo0_value;
+  entry_lo_t entrylo0_write_value;
+  reg [19:0] entrylo0_page_frame_number;
+  reg [2:0] entrylo0_cache;
+  reg entrylo0_dirty;
+  reg entrylo0_valid;
+  reg entrylo0_is_global;
+  assign entrylo0_write_value = entry_lo_t'(wb_to_cp0_data_bus.write_data);
+  assign entrylo0_value = '{
+    zero: 6'b0,
+    page_frame_number: entrylo0_page_frame_number,
+    cache: entrylo0_cache,
+    dirty: entrylo0_dirty,
+    valid: entrylo0_valid,
+    is_global: entrylo0_is_global
+  };
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_entrylo0) begin
+      entrylo0_page_frame_number <= entrylo0_write_value.page_frame_number;
+    end else if (wb_to_cp0_data_bus.tlb_read) begin
+      entrylo0_page_frame_number <= tlb_read_data.even_page.page_frame_number;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_entrylo0) begin
+      entrylo0_cache <= entrylo0_write_value.cache;
+    end else if (wb_to_cp0_data_bus.tlb_read) begin
+      entrylo0_cache <= tlb_read_data.even_page.is_cached;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_entrylo0) begin
+      entrylo0_dirty <= entrylo0_write_value.dirty;
+    end else if (wb_to_cp0_data_bus.tlb_read) begin
+      entrylo0_dirty <= tlb_read_data.even_page.is_dirty;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_entrylo0) begin
+      entrylo0_valid <= entrylo0_write_value.valid;
+    end else if (wb_to_cp0_data_bus.tlb_read) begin
+      entrylo0_valid <= tlb_read_data.even_page.is_valid;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_entrylo0) begin
+      entrylo0_is_global <= entrylo0_write_value.is_global;
+    end else if (wb_to_cp0_data_bus.tlb_read) begin
+      entrylo0_is_global <= tlb_read_data.is_global;
+    end
+  end
+
+  entry_lo_t entrylo1_value;
+  entry_lo_t entrylo1_write_value;
+  reg [19:0] entrylo1_page_frame_number;
+  reg [2:0] entrylo1_cache;
+  reg entrylo1_dirty;
+  reg entrylo1_valid;
+  reg entrylo1_is_global;
+  assign entrylo1_write_value = entry_lo_t'(wb_to_cp0_data_bus.write_data);
+  assign entrylo1_value = '{
+    zero: 6'b0,
+    page_frame_number: entrylo1_page_frame_number,
+    cache: entrylo1_cache,
+    dirty: entrylo1_dirty,
+    valid: entrylo1_valid,
+    is_global: entrylo1_is_global
+  };
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_entrylo1) begin
+      entrylo1_page_frame_number <= entrylo1_write_value.page_frame_number;
+    end else if (wb_to_cp0_data_bus.tlb_read) begin
+      entrylo1_page_frame_number <= tlb_read_data.odd_page.page_frame_number;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_entrylo1) begin
+      entrylo1_cache <= entrylo1_write_value.cache;
+    end else if (wb_to_cp0_data_bus.tlb_read) begin
+      entrylo1_cache <= tlb_read_data.odd_page.is_cached;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_entrylo1) begin
+      entrylo1_dirty <= entrylo1_write_value.dirty;
+    end else if (wb_to_cp0_data_bus.tlb_read) begin
+      entrylo1_dirty <= tlb_read_data.odd_page.is_dirty;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_entrylo1) begin
+      entrylo1_valid <= entrylo1_write_value.valid;
+    end else if (wb_to_cp0_data_bus.tlb_read) begin
+      entrylo1_valid <= tlb_read_data.odd_page.is_valid;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.write_enabled && address_entrylo1) begin
+      entrylo1_is_global <= entrylo1_write_value.is_global;
+    end else if (wb_to_cp0_data_bus.tlb_read) begin
+      entrylo1_is_global <= tlb_read_data.is_global;
+    end
+  end
 
   badvaddr_t badvaddr_value;
   always_ff @(posedge clock) begin
@@ -52,6 +197,31 @@ module coprocessor0(
       count_value <= wb_to_cp0_data_bus.write_data;
     end else if (tick) begin
       count_value <= count_value + 1'b1;
+    end
+  end
+
+  entry_hi_t entryhi_value;
+  entry_hi_t entryhi_write_value;
+  reg [18:0] entryhi_virtual_page_number;
+  reg [7:0] entryhi_asid;
+  assign entryhi_write_value = entry_hi_t'(wb_to_cp0_data_bus.write_data);
+  assign entryhi_value = '{
+    virtual_page_number: entryhi_virtual_page_number,
+    zero: 5'b0,
+    asid: entryhi_asid
+  };
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.tlb_read) begin
+      entryhi_virtual_page_number <= tlb_read_data.virtual_page_number;
+    end else if (wb_to_cp0_data_bus.write_enabled && address_entryhi) begin
+      entryhi_virtual_page_number <= entryhi_write_value.virtual_page_number;
+    end
+  end
+  always_ff @(posedge clock) begin
+    if (wb_to_cp0_data_bus.tlb_read) begin
+      entryhi_asid <= tlb_read_data.asid;
+    end if (wb_to_cp0_data_bus.write_enabled && address_entryhi) begin
+      entryhi_asid <= entryhi_write_value.asid;
     end
   end
 
@@ -165,8 +335,12 @@ module coprocessor0(
   end
 
   assign cp0_read_data =
+    ({CPU_DATA_WIDTH{address_index}} & cpu_data_t'(index_value)) |
+    ({CPU_DATA_WIDTH{address_entrylo0}} & cpu_data_t'(entrylo0_value)) |
+    ({CPU_DATA_WIDTH{address_entrylo1}} & cpu_data_t'(entrylo1_value)) |
     ({CPU_DATA_WIDTH{address_badvaddr}} & cpu_data_t'(badvaddr_value)) |
     ({CPU_DATA_WIDTH{address_count}} & cpu_data_t'(count_value)) |
+    ({CPU_DATA_WIDTH{address_entryhi}} & cpu_data_t'(entryhi_value)) |
     ({CPU_DATA_WIDTH{address_compare}} & cpu_data_t'(compare_value)) |
     ({CPU_DATA_WIDTH{address_status}} & cpu_data_t'(status_value)) |
     ({CPU_DATA_WIDTH{address_cause}} & cpu_data_t'(cause_value)) |
@@ -175,4 +349,29 @@ module coprocessor0(
     exception_address: epc_value,
     interrupt_valid : {cause_value.hardware_interrupt, cause_value.software_interrupt} & status_value.interrupt_mask & {8{status_value.interrupt_enabled}} & {8{~status_value.exception_level}}
   };
+
+  assign tlb_request = '{
+    virtual_page_number: entryhi_value.virtual_page_number,
+    is_odd_page: 1'b0,
+    asid: entryhi_value.asid
+  };
+  assign tlb_read_index = index_value.index;
+  assign tlb_write_data = '{
+    virtual_page_number: entryhi_value.virtual_page_number,
+    asid: entryhi_value.asid,
+    is_global: entrylo0_value.is_global & entrylo1_value.is_global,
+    even_page: '{
+      page_frame_number: entrylo0_value.page_frame_number,
+      is_cached: entrylo0_value.cache,
+      is_dirty: entrylo0_value.dirty,
+      is_valid: entrylo0_value.valid
+    },
+    odd_page: '{
+      page_frame_number: entrylo1_value.page_frame_number,
+      is_cached: entrylo1_value.cache,
+      is_dirty: entrylo1_value.dirty,
+      is_valid: entrylo1_value.valid
+    }
+  };
+  assign tlb_write_index = index_value.index;
 endmodule: coprocessor0

@@ -2,6 +2,7 @@
 `define COPROCESSOR_PARAMS_SVH
 
 `include "cpu_core_params.svh"
+`include "tlb_params.svh"
 
 package coprocessor0_params;
   import cpu_core_params::*;
@@ -13,9 +14,30 @@ package coprocessor0_params;
     logic [7:0] interrupt_valid;
   } cp0_to_if_bus_t;
 
+  typedef struct packed {
+    logic probe;
+    logic [30 - $clog2(tlb_params::TLB_NUM):0] zero;
+    logic [$clog2(tlb_params::TLB_NUM) - 1:0] index;
+  } index_t;
+
+  typedef struct packed {
+    logic [5:0] zero;
+    logic [19:0] page_frame_number;
+    logic [2:0] cache;
+    logic dirty;
+    logic valid;
+    logic is_global;
+  } entry_lo_t;
+
   typedef address_t badvaddr_t;
 
   typedef cpu_data_t count_t;
+
+  typedef struct packed {
+    logic [18:0] virtual_page_number;
+    logic [4:0] zero;
+    logic [7:0] asid;
+  } entry_hi_t;
 
   typedef cpu_data_t compare_t;
 
