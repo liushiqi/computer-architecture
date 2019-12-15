@@ -163,7 +163,7 @@ begin
             $display("--------------------------------------------------------------");
             debug_wb_err <= 1'b1;
             #40;
-            $finish;
+            $fatal("Test failed.");
         end
     end
 end
@@ -258,7 +258,7 @@ begin
         $fclose(trace_ref);
         if (global_err)
         begin
-            $display("Fail!!!Total %d errors!",err_count);
+            $fatal("Fail!!!Total %d errors!",err_count);
         end
         else
         begin
