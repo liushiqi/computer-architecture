@@ -41,6 +41,8 @@ package io_stage_params;
     logic tlb_read;
     logic tlb_write;
     logic tlb_probe;
+    logic tlb_refill;
+    logic tlb_exception;
   } io_to_wb_bus_t;
 endpackage: io_stage_params
 

@@ -23,8 +23,12 @@ package wb_stage_params;
   } wb_to_register_file_bus_t;
 
   typedef struct packed {
+    logic flush_pipe;
     logic exception_valid;
     logic eret_flush;
+    logic tlb_write_flush;
+    logic tlb_refill;
+    program_count_t program_count_plus4;
   } wb_exception_bus_t;
 
   typedef struct packed {
@@ -42,6 +46,7 @@ package wb_stage_params;
     logic tlb_read;
     logic tlb_write;
     logic tlb_probe;
+    logic tlb_exception;
   } wb_to_cp0_bus_t;
 endpackage: wb_stage_params
 

@@ -210,7 +210,9 @@ module id_stage(
     badvaddr_value: from_if_data.badvaddr_value,
     tlb_read: instruction_tlbr,
     tlb_write: instruction_tlbwi,
-    tlb_probe: instruction_tlbp
+    tlb_probe: instruction_tlbp,
+    tlb_refill: from_if_data.tlb_refill,
+    tlb_exception: from_if_data.tlb_exception
   };
 
   wire [4:0] source_register_0_if_unused;
@@ -234,7 +236,7 @@ module id_stage(
   always_ff @(posedge clock) begin
     if (reset) begin
       id_valid <= 1'b0;
-    end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
+    end else if (wb_exception_bus.flush_pipe) begin
       id_valid <= 1'b0;
     end else if (id_allow_in) begin
       id_valid <= if_to_id_bus.valid;
@@ -251,7 +253,7 @@ module id_stage(
     in_delay_slot <= is_jump_operation;
   end
 
-  assign id_have_exception_forwards = (from_if_data.exception_valid || id_have_exception || instruction_eret) && id_valid;
+  assign id_have_exception_forwards = (from_if_data.exception_valid || id_have_exception || instruction_eret || instruction_tlbwi) && id_valid;
   assign reserved_instruction =
     ~(instruction_add | instruction_addi | instruction_addiu | instruction_addu | instruction_and | instruction_andi | instruction_beq | instruction_bgez | instruction_bgezal | instruction_bgtz | instruction_blez |
       instruction_bltz | instruction_bltzal | instruction_bne | instruction_break | instruction_div | instruction_divu | instruction_eret | instruction_j | instruction_jal | instruction_jalr | instruction_jr |

@@ -6,6 +6,7 @@
 package ex_stage_params;
   import cpu_core_params::*;
   export cpu_core_params::cpu_data_t;
+  export cpu_core_params::address_t;
   export cpu_core_params::program_count_t;
 
   typedef struct packed {
@@ -55,6 +56,8 @@ package ex_stage_params;
     logic tlb_read;
     logic tlb_write;
     logic tlb_probe;
+    logic tlb_refill;
+    logic tlb_exception;
   } ex_to_io_bus_t;
 endpackage: ex_stage_params
 

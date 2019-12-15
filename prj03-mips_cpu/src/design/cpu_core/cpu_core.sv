@@ -62,6 +62,7 @@ module cpu_core(
   wb_stage_params::wb_to_cp0_bus_t wb_to_cp0_data_bus;
 
   coprocessor0_params::cp0_to_if_bus_t cp0_to_if_data_bus;
+  coprocessor0_params::cp0_to_ex_bus_t cp0_to_ex_data_bus;
   cpu_data_t cp0_read_data;
 
   tlb_params::search_request_t tlb_request1;
@@ -105,6 +106,9 @@ module cpu_core(
     .wb_exception_bus,
     .cp0_to_if_data_bus,
     .if_have_exception_backwards,
+    // tlb interface
+    .tlb_request(tlb_request1),
+    .tlb_result(tlb_responce1),
     // instruction sram interface
     .instruction_ram_request,
     .instruction_ram_write,
@@ -157,8 +161,12 @@ module cpu_core(
     .ex_to_io_bus,
     // exception bus
     .wb_exception_bus,
+    .cp0_to_ex_data_bus,
     .ex_have_exception_forwards,
     .ex_have_exception_backwards,
+    // tlb interface
+    .tlb_request(tlb_request2),
+    .tlb_result(tlb_responce2),
     // data sram interface
     .data_ram_request,
     .data_ram_write,
@@ -223,6 +231,7 @@ module cpu_core(
     .reset,
     .wb_to_cp0_data_bus,
     .cp0_to_if_data_bus,
+    .cp0_to_ex_data_bus,
     .cp0_read_data,
     .tlb_request(tlb_request3),
     .tlb_responce(tlb_responce3),

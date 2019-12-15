@@ -5,6 +5,7 @@ module coprocessor0(
   input reset,
   input wb_stage_params::wb_to_cp0_bus_t wb_to_cp0_data_bus,
   output coprocessor0_params::cp0_to_if_bus_t cp0_to_if_data_bus,
+  output coprocessor0_params::cp0_to_ex_bus_t cp0_to_ex_data_bus,
   output cpu_core_params::cpu_data_t cp0_read_data,
   output tlb_params::search_request_t tlb_request,
   input tlb_params::search_result_t tlb_responce,
@@ -176,7 +177,7 @@ module coprocessor0(
 
   badvaddr_t badvaddr_value;
   always_ff @(posedge clock) begin
-    if (wb_to_cp0_data_bus.exception_valid && wb_to_cp0_data_bus.is_address_fault) begin
+    if (wb_to_cp0_data_bus.exception_valid && (wb_to_cp0_data_bus.is_address_fault || wb_to_cp0_data_bus.tlb_exception)) begin
       badvaddr_value <= wb_to_cp0_data_bus.badvaddr_value;
     end
   end
@@ -215,6 +216,8 @@ module coprocessor0(
       entryhi_virtual_page_number <= tlb_read_data.virtual_page_number;
     end else if (wb_to_cp0_data_bus.write_enabled && address_entryhi) begin
       entryhi_virtual_page_number <= entryhi_write_value.virtual_page_number;
+    end else if (wb_to_cp0_data_bus.exception_valid && wb_to_cp0_data_bus.tlb_exception) begin
+      entryhi_virtual_page_number <= wb_to_cp0_data_bus.badvaddr_value[31:13];
     end
   end
   always_ff @(posedge clock) begin
@@ -347,7 +350,11 @@ module coprocessor0(
     ({CPU_DATA_WIDTH{address_epc}} & cpu_data_t'(epc_value));
   assign cp0_to_if_data_bus = '{
     exception_address: epc_value,
-    interrupt_valid : {cause_value.hardware_interrupt, cause_value.software_interrupt} & status_value.interrupt_mask & {8{status_value.interrupt_enabled}} & {8{~status_value.exception_level}}
+    interrupt_valid : {cause_value.hardware_interrupt, cause_value.software_interrupt} & status_value.interrupt_mask & {8{status_value.interrupt_enabled}} & {8{~status_value.exception_level}},
+    asid: entryhi_value.asid
+  };
+  assign cp0_to_ex_data_bus = '{
+    asid: entryhi_value.asid
   };
 
   assign tlb_request = '{

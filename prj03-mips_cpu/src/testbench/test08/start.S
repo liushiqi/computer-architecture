@@ -2,7 +2,7 @@
 #include <regdef.h>
 #include <ucas_cde.h>
 
-#define TEST_TLB_EXCEPTION 0
+#define TEST_TLB_EXCEPTION 1
 
 #if TEST_TLB_EXCEPTION
     #define TEST_NUM 9

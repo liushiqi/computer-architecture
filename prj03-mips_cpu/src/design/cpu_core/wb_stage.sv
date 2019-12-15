@@ -59,7 +59,8 @@ module wb_stage(
     badvaddr_value: from_io_data.badvaddr_value,
     tlb_probe: from_io_data.tlb_probe,
     tlb_read: from_io_data.tlb_read,
-    tlb_write: from_io_data.tlb_write
+    tlb_write: from_io_data.tlb_write,
+    tlb_exception: wb_valid && from_io_data.tlb_exception
   };
   assign tlb_write_enabled = from_io_data.tlb_write;
 
@@ -71,8 +72,12 @@ module wb_stage(
   };
 
   assign wb_exception_bus = '{
+    flush_pipe: wb_valid && (from_io_data.exception_valid || from_io_data.eret_flush || from_io_data.tlb_write),
     exception_valid: wb_valid && from_io_data.exception_valid,
-    eret_flush: wb_valid && from_io_data.eret_flush
+    eret_flush: wb_valid && from_io_data.eret_flush,
+    tlb_write_flush: wb_valid && from_io_data.tlb_write,
+    tlb_refill: wb_valid && from_io_data.tlb_refill,
+    program_count_plus4: wb_program_count + 32'h4
   };
 
   assign wb_ready_go = 1'b1;

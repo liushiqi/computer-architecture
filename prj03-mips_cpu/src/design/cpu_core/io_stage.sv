@@ -26,7 +26,6 @@ module io_state(
   wire io_to_wb_valid;
 
   wire should_flush;
-  wire address_exception;
   wire io_have_exception;
   wire [5:0] exception_code;
 
@@ -70,11 +69,13 @@ module io_state(
     in_delay_slot: from_ex_data.in_delay_slot,
     eret_flush: from_ex_data.eret_flush,
     exception_code: exception_code,
-    is_address_fault: from_ex_data.is_address_fault | address_exception,
-    badvaddr_value: (from_ex_data.is_address_fault ? from_ex_data.badvaddr_value : address_exception ? from_ex_data.memory_address : 32'b0),
+    is_address_fault: from_ex_data.is_address_fault,
+    badvaddr_value: from_ex_data.badvaddr_value,
     tlb_probe: from_ex_data.tlb_probe,
     tlb_read: from_ex_data.tlb_read,
-    tlb_write: from_ex_data.tlb_write
+    tlb_write: from_ex_data.tlb_write,
+    tlb_refill: from_ex_data.tlb_refill,
+    tlb_exception: from_ex_data.tlb_exception
   };
 
   wire previous_valid;
@@ -97,7 +98,7 @@ module io_state(
   always_ff @(posedge clock) begin
     if (reset) begin
       io_valid <= 1'b0;
-    end else if (wb_exception_bus.exception_valid || wb_exception_bus.eret_flush) begin
+    end else if (wb_exception_bus.flush_pipe) begin
       io_valid <= 1'b0;
     end else if (io_allow_in) begin
       io_valid <= ex_to_io_bus.valid;
@@ -120,10 +121,9 @@ module io_state(
     end
   end
 
-  assign io_have_exception_forwards = (from_ex_data.exception_valid || from_ex_data.eret_flush || io_have_exception) && io_valid;
-  assign address_exception = (from_ex_data.is_load_half_word && (from_ex_data.memory_address[0] != 1'b0)) || (from_ex_data.is_load_word && (from_ex_data.memory_address[1:0] != 2'b00));
-  assign io_have_exception = address_exception;
-  assign exception_code = from_ex_data.exception_valid ? from_ex_data.exception_code : address_exception ? 4'h04 : 4'h00;
+  assign io_have_exception_forwards = (from_ex_data.exception_valid || from_ex_data.eret_flush || from_ex_data.tlb_write || io_have_exception) && io_valid;
+  assign io_have_exception = 1'b0;
+  assign exception_code = from_ex_data.exception_valid ? from_ex_data.exception_code : 4'h00;
   assign should_flush = io_have_exception_forwards || io_have_exception_backwards;
 
   always_ff @(posedge clock) begin

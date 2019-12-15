@@ -12,7 +12,12 @@ package coprocessor0_params;
   typedef struct packed {
     address_t exception_address;
     logic [7:0] interrupt_valid;
+    logic [7:0] asid;
   } cp0_to_if_bus_t;
+
+  typedef struct packed {
+    logic [7:0] asid;
+  } cp0_to_ex_bus_t;
 
   typedef struct packed {
     logic probe;
